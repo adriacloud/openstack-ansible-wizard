@@ -1,0 +1,1 @@
+textual[syntax]==3.2.0
