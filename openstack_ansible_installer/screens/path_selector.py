@@ -17,8 +17,10 @@ from pathlib import Path
 from textual.app import ComposeResult
 from textual.containers import Grid
 from textual import on
-from textual.widgets import Header, Footer, Button, Static, Input
+from textual.widgets import Button, Static, Input
 from textual.screen import ModalScreen
+
+from common import utils
 
 
 class PathInputScreen(ModalScreen):
@@ -30,11 +32,13 @@ class PathInputScreen(ModalScreen):
 
     def __init__(self,
                  path_type: str,
+                 reversed_checks: bool = False,
                  name: str | None = None,
                  id: str | None = None,
                  classes: str | None = None):
         super().__init__(name=name, id=id, classes=classes)
         self.path_type = path_type
+        self.reversed = reversed_checks
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the path input screen."""
@@ -55,10 +59,25 @@ class PathInputScreen(ModalScreen):
         if path_input:
             p = Path(path_input)
             if p.is_dir():
-                message_widget.update(f"[green]Path '{path_input}' is a valid directory.[/green]")
-                self.dismiss(path_input)
+                if self.reversed:
+                    message_widget.update(f"[red]Error:[/red] Path '{path_input}' already exist and is a directory.")
+                else:
+                    message_widget.update(f"[green]Path '{path_input}' is a valid directory.[/green]")
+                    self.dismiss(path_input)
+            elif p.exists() and self.reversed:
+                message_widget.update(f"[red]Error:[/red] Path '{path_input}' already exist")
             else:
-                message_widget.update(f"[red]Error:[/red] Path '{path_input}' does not exist or is not a directory.")
+                if self.reversed:
+                    if utils.path_writable(path_input, parent=True):
+                        message_widget.update(f"[green]Path '{path_input}' does not exist and can be used.[/green]")
+                        self.dismiss(path_input)
+                    else:
+                        message_widget.update(
+                            "[red]Error:[/red]"
+                            f"Unable to use '{path_input}' due to insufficient permissions to parent path.")
+                else:
+                    message_widget.update(
+                        f"[red]Error:[/red] Path '{path_input}' does not exist or is not a directory.")
         else:
             message_widget.update("[red]Error:[/red] Please enter a path.")
 

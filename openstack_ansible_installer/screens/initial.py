@@ -21,6 +21,7 @@ from textual.widgets import Header, Footer, Button, Static
 from textual.reactive import reactive
 from textual.screen import Screen
 
+from screens.clone import CloneOSAScreen
 from screens.configuration import ConfigurationScreen
 from screens.editor import FileBrowserEditorScreen
 from screens.path_selector import PathInputScreen
@@ -41,9 +42,9 @@ class InitialCheckScreen(Screen):
         yield Header()
         with Container(classes="screen-container"):
             yield Static("OpenStack-Ansible Deployment UI", classes="title")
-            yield Static("Checking for existing setup...", id="status_message")
-            yield Static("", id="osa_path_status")
-            yield Static("", id="etc_path_status")
+            yield Static("Checking for existing setup...", id="status_message", classes="status_message")
+            yield Static("", id="osa_path_status", classes="status_message")
+            yield Static("", id="etc_path_status", classes="status_message")
             with HorizontalGroup(classes="button-row"):
                 yield Button("Bootstrap OpenStack-Ansible", id="clone_osa", variant="primary", disabled=True)
                 yield Button("Custom OpenStack-Ansible Path", id="custom_osa_path", variant="default", disabled=True)
@@ -123,22 +124,14 @@ class InitialCheckScreen(Screen):
             self.call_after_refresh(lambda: self.app.push_screen(FileBrowserEditorScreen(initial_path=str(etc_path))))
 
     @on(Button.Pressed, "#clone_osa")
-    def clone_repo(self) -> None:
+    @work
+    async def clone_repo(self) -> None:
         """Simulates cloning the OpenStack-Ansible repository."""
-        self.query_one("#status_message", Static).update("Attempting to clone OpenStack-Ansible...")
-        # In a real application, you would use subprocess.run() here
-        # For demonstration, we'll just show a message.
-        try:
-            # Example: subprocess.run(
-            #   ["git", "clone", "https://github.com/openstack/openstack-ansible.git", "/opt/openstack-ansible"],
-            #   check=True)
-            self.log("Simulating git clone...")
-            self.query_one("#status_message", Static).update(
-                "[green]Simulated cloning complete.[/green] Please restart the app to re-check.")
-            self.query_one("#clone_osa", Button).disabled = True
-            self.query_one("#custom_osa_path", Button).disabled = True
-        except Exception as e:
-            self.query_one("#status_message", Static).update(f"[red]Error during clone:[/red] {e}")
+        osa_cloned = await self.app.push_screen_wait(CloneOSAScreen(clone_path=self.osa_clone_dir))
+        if osa_cloned:
+            # Update the reactive path is likely not needed as we're passing reactive object to the screen
+            self.osa_clone_dir = osa_cloned
+            self.check_paths()  # Re-check paths with the new custom path
 
     @on(Button.Pressed, "#custom_osa_path")
     @work

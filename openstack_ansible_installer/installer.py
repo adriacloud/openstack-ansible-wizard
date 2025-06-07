@@ -15,10 +15,7 @@
 
 from textual.app import App
 
-import screens.configuration
-import screens.editor
-import screens.initial
-import screens.path_selector
+from screens.initial import InitialCheckScreen
 
 
 class OpenStackAnsibleApp(App):
@@ -29,13 +26,6 @@ class OpenStackAnsibleApp(App):
         ("q", "quit", "Quit"),
         ("t", "toggle_theme", "dark/light")
     ]
-    SCREENS = {
-        "initial_check": screens.initial.InitialCheckScreen,
-        "path_input": screens.path_selector.PathInputScreen,
-        "file_editor": screens.editor.FileBrowserEditorScreen,
-        "create_new": screens.editor.CreateNewEntryScreen,
-        "configuration": screens.configuration.ConfigurationScreen,
-    }
 
     def action_toggle_theme(self) -> None:
         """An action to toggle dark mode."""
@@ -51,7 +41,7 @@ class OpenStackAnsibleApp(App):
 
     def on_mount(self) -> None:
         """Called when the app is mounted."""
-        self.push_screen("initial_check")
+        self.push_screen(InitialCheckScreen())
 
 
 if __name__ == "__main__":

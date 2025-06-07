@@ -7,6 +7,7 @@
     color: #e06c75; /* Reddish-pink for titles */
     margin-bottom: 2;
     padding-top: 1; /* Add some space above the title */
+    column-span: 4;
 }
 
 /* Screen Container for InitialCheckScreen, PathInputScreen, ConfigurationScreen */
@@ -16,12 +17,10 @@
 }
 
 /* Status Messages */
-#status_message,
-#osa_path_status,
-#etc_path_status {
+.status_message {
     text-align: center;
     margin-bottom: 1;
-    padding: 0 2; /* Add horizontal padding to status messages */
+    padding: 0 2;
 }
 
 /* Button Row Layout */
@@ -128,7 +127,7 @@ PathInputScreen {
 }
 
 /* Yes/No confirmation dialog */
-ConfirmScreen, CreateNewEntryScreen {
+ConfirmScreen, CreateNewEntryScreen, GitCloneScreen {
     align: center middle;
 }
 
@@ -223,4 +222,83 @@ ConfirmScreen, CreateNewEntryScreen {
 #save_button, #new_button, #delete_button {
     margin-top: 1;
     min-width: 12; /* Adjust width for save button */
+}
+
+/* Clone panel */
+.version-selector {
+    width: 50;
+}
+
+.no-version-fetch #openstack-version {
+    display: none
+}
+
+.no-version-selected #openstack-ansible-version {
+    display: none
+}
+
+.no-osa-version-selected #clone_repo {
+    display: none
+}
+
+#confirm_clone_dialog {
+    grid-size: 4;
+    grid-gutter: 1;
+    grid-rows: auto auto auto auto;
+    padding: 2;
+    width: 75;
+    height: 20;
+    border: thick $background 80%;
+    background: $surface;
+
+    align-horizontal: center;
+    align-vertical: middle;
+}
+
+#git-clone-status-message {
+    column-span: 4;
+    content-align: center middle;
+}
+
+.no-clone-confirm #git-clone-progress {
+    display: none
+}
+
+#git-clone-progress {
+    column-span: 4;
+    width: 100%;
+    align-horizontal: center;
+    content-align: center middle;
+}
+
+#git-clone-button-row {
+    grid-size: 2;
+    column-span: 4;
+    grid-gutter: 1;
+    content-align: center middle;
+    align-horizontal: center;
+}
+
+#confirm-git-clone, #cancel-git-clone, {
+    width: 20;
+    content-align: center middle;
+}
+
+.clone-confirmed #confirm-git-clone {
+    display: none
+}
+
+.clone-confirmed #cancel-git-clone {
+    display: none
+}
+
+#accept-git-clone {
+    display: none;
+    column-span: 2;
+    width: 20;
+    display: none;
+}
+
+.clone-completed #accept-git-clone {
+    display: block;
 }
