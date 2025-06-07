@@ -15,13 +15,13 @@
 from pathlib import Path
 
 from textual.app import ComposeResult
-from textual.containers import Container
+from textual.containers import Grid
 from textual import on
 from textual.widgets import Header, Footer, Button, Static, Input
-from textual.screen import Screen
+from textual.screen import ModalScreen
 
 
-class PathInputScreen(Screen):
+class PathInputScreen(ModalScreen):
     """A screen for the user to input a custom path."""
 
     BINDINGS = [
@@ -38,13 +38,13 @@ class PathInputScreen(Screen):
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the path input screen."""
-        yield Header()
-        with Container(classes="screen-container"):
-            yield Static(f"Enter Custom Path for {self.path_type}", classes="title")
-            yield Input(placeholder=f"e.g., /path/to/{self.path_type}", id="path_input")
-            yield Button("Submit Path", id="submit_path", variant="primary")
-            yield Static("", id="path_input_message")
-        yield Footer()
+        yield Grid(
+            Static(f"Enter Custom Path for {self.path_type}", classes="title", id="path_input_title"),
+            Input(placeholder=f"e.g., /path/to/{self.path_type}", id="path_input"),
+            Button("Submit Path", id="submit_path", variant="primary"),
+            Static("", id="path_input_message"),
+            id="select_path_dialog"
+        )
 
     @on(Input.Submitted, "#path_input")
     @on(Button.Pressed, "#submit_path")

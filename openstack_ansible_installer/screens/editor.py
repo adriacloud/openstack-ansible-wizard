@@ -58,7 +58,7 @@ class FileBrowserEditorScreen(Screen):
                 yield Static("Select a file from the tree to edit.", id="editor_status")
                 yield YAMLTextArea.code_editor(id="text_editor", language="yaml", show_line_numbers=True)
                 with HorizontalScroll(classes="content-buttons"):
-                    yield Button("New File", id="new_button", variant="primary")
+                    yield Button("New", id="new_button", variant="primary")
                     yield Button.success("Save File", id="save_button")
                     yield Button.warning("Delete File", id="delete_button")
         yield Footer()

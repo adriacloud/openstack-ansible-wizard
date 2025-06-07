@@ -41,18 +41,56 @@ Button {
     padding: 0 2; /* Padding inside buttons */
 }
 
-
-/* Input Field Styling */
 Input {
     width: 70%; /* Input takes 70% of parent width */
     margin-bottom: 1;
-    padding: 0 1; /* Padding inside the input field */
+    padding: 0 1;
 }
+
+/* Path selector Layout */
+PathInputScreen {
+    align: center middle;
+}
+
 
 #path_input_message {
     text-align: center;
     margin-top: 1;
     padding: 0 2;
+}
+
+.no-config #open_editor {
+    display: none
+}
+
+.config-found #open_editor {
+    display: block
+}
+
+#select_path_dialog{
+    grid-size: 4;
+    grid-gutter: 1;
+    grid-rows: 1fr 6;
+    padding: 1 1;
+    width: 100;
+    height: 20;
+    border: thick $background 80%;
+    background: $surface;
+}
+
+#path_input_title {
+    column-span: 4;
+}
+
+#path_input {
+    column-span: 3;
+    width: 100%;
+    border:   #56b6c2;
+}
+
+#path_input_message {
+    column-span: 4;
+    height: 10;
 }
 
 /* File Browser / Editor Screen Layout */

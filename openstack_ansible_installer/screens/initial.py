@@ -45,13 +45,12 @@ class InitialCheckScreen(Screen):
             yield Static("", id="osa_path_status")
             yield Static("", id="etc_path_status")
             with HorizontalGroup(classes="button-row"):
-                yield Button("Install OpenStack-Ansible", id="clone_osa", variant="primary", disabled=True)
+                yield Button("Bootstrap OpenStack-Ansible", id="clone_osa", variant="primary", disabled=True)
                 yield Button("Custom OpenStack-Ansible Path", id="custom_osa_path", variant="default", disabled=True)
             with HorizontalGroup(classes="button-row"):
-                yield Button("Initial configuration", id="generate_config", variant="primary", disabled=True)
+                yield Button("Generate configuration", id="generate_config", variant="primary", disabled=True)
                 yield Button("Custom Configuation Path", id="custom_config_path", variant="default", disabled=True)
-            with Container(classes="button-row"):
-                yield Button("Configuration Editor", id="open_editor", variant="default", disabled=True)
+                yield Button.warning("Editor", id="open_editor", disabled=True)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -98,6 +97,7 @@ class InitialCheckScreen(Screen):
             custom_osa_path_button.disabled = False
 
         if etc_path.is_dir():
+            self.add_class("config-found")
             if Path(f'{self.osa_conf_dir}/openstack_user_config.yml').is_file():
                 etc_status_widget.update(f"[green]✓[/green] {self.osa_conf_dir} exists.")
                 status_message_widget.update(f"Directory {self.osa_conf_dir} found. Opening editor...")
@@ -107,9 +107,10 @@ class InitialCheckScreen(Screen):
             else:
                 etc_status_widget.update(f"[red]✗[/red] {self.osa_conf_dir} exists but is not yet configured.")
                 proceed_config_button.disabled = False
-                open_editor_button.disabled = True
+                open_editor_button.disabled = False
                 custom_config_button.disabled = False
         else:
+            self.add_class("no-config")
             etc_status_widget.update(f"[red]✗[/red] {self.osa_conf_dir} does not exist.")
             if osa_path.is_dir():  # Only suggest config if OSA repo is found
                 status_message_widget.update(f"No {self.osa_conf_dir} found. Proceed to configuration.")
@@ -120,10 +121,6 @@ class InitialCheckScreen(Screen):
         if check_osa_success and check_config_success:
             # Automatically switch to editor if all required settings exist
             self.call_after_refresh(lambda: self.app.push_screen(FileBrowserEditorScreen(initial_path=str(etc_path))))
-
-    # def action_quit(self) -> None:
-    #     """Quits the application."""
-    #     self.app.exit()  # Changed from self.app.quit() to self.app.exit()
 
     @on(Button.Pressed, "#clone_osa")
     def clone_repo(self) -> None:
