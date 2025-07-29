@@ -127,7 +127,7 @@ PathInputScreen {
 }
 
 /* Yes/No confirmation dialog */
-ConfirmScreen, CreateNewEntryScreen, GitCloneScreen {
+ConfirmScreen, CreateNewEntryScreen, GitCloneScreen, BootstrapOsaSreen {
     align: center middle;
 }
 
@@ -224,7 +224,7 @@ ConfirmScreen, CreateNewEntryScreen, GitCloneScreen {
     min-width: 12; /* Adjust width for save button */
 }
 
-/* Clone panel */
+/* screens.bootstrap.CloneOSAScreen */
 .version-selector {
     width: 50;
 }
@@ -240,6 +240,87 @@ ConfirmScreen, CreateNewEntryScreen, GitCloneScreen {
 .no-osa-version-selected #clone_repo {
     display: none
 }
+
+.no-clone-detected #clone-buttons {
+    display: none
+}
+
+/* screens.bootstrap.BootstrapOsaSreen */
+
+#confirm_bootstrap_dialog {
+    grid-size: 4;
+    grid-gutter: 1;
+    grid-rows: auto auto 1fr auto;
+    padding: 2;
+    min-width: 71;
+    min-height: 20;
+    width: 50%;
+    height: 30%;
+    border: thick $background 80%;
+    background: $surface;
+    align-horizontal: center;
+    align-vertical: middle;
+}
+
+.bootstrap-confirmed #confirm_bootstrap_dialog {
+    height: 70%;
+    min-height: 24;
+}
+
+#bootstrap-title {
+    margin-bottom: 1;
+}
+
+#osa-bootstrap-status-message {
+    column-span: 4;
+    content-align: center middle;
+}
+
+.no-bootstrap-confirm #osa-bootstrap-progress {
+    display: none
+}
+
+#osa-bootstrap-progress {
+    column-span: 4;
+    width: 100%;
+    align-horizontal: center;
+    content-align: left top;
+    margin-bottom: 1;
+}
+
+#osa-bootstrap-button-row {
+    grid-size: 2;
+    column-span: 4;
+    grid-gutter: 1;
+    content-align: center middle;
+    align-horizontal: center;
+}
+
+#confirm-osa-bootstrap, #cancel-osa-bootstrap {
+    width: 20;
+    content-align: center middle;
+}
+
+.bootstrap-confirmed #confirm-osa-bootstrap {
+    display: none
+}
+
+.bootstrap-confirmed #cancel-osa-bootstrap {
+    display: none
+}
+
+#accept-osa-bootstrap {
+    display: none;
+    column-span: 2;
+    width: 20;
+    display: none;
+}
+
+.bootstrap-completed #accept-osa-bootstrap {
+    display: block;
+}
+
+/* screens.git.GitCloneScreen */
 
 #confirm_clone_dialog {
     grid-size: 4;

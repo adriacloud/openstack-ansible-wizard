@@ -21,7 +21,7 @@ from textual.widgets import Header, Footer, Button, Static
 from textual.reactive import reactive
 from textual.screen import Screen
 
-from screens.clone import CloneOSAScreen
+from screens.bootstrap import CloneOSAScreen
 from screens.configuration import ConfigurationScreen
 from screens.editor import FileBrowserEditorScreen
 from screens.path_selector import PathInputScreen
@@ -83,7 +83,7 @@ class InitialCheckScreen(Screen):
         if osa_path.is_dir():
             if Path(f'{self.osa_clone_dir}/osa_toolkit/generate.py').is_file():
                 osa_status_widget.update(f"[green]✓[/green] {self.osa_clone_dir} exists.")
-                clone_button.disabled = True
+                clone_button.disabled = False
                 custom_osa_path_button.disabled = False
                 check_osa_success = True
             else:
