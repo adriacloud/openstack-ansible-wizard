@@ -14,8 +14,11 @@
 
 import git
 
+
 def get_git_version(path: str) -> str:
-    """ This is separated as a function to cover varios scenarios of
+    """Return git repository current version
+
+    This is separated as a function to cover varios scenarios of
     how a repository could be checked out. At the same time, it is
     limited with a simple describe right now, but with a potential
     to grow logic if/when needed.

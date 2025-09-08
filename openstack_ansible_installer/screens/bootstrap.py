@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 import asyncio
+from pathlib import Path
 
 from textual.app import ComposeResult
 from textual.containers import Container, HorizontalGroup, Grid
@@ -208,7 +208,8 @@ class CloneOSAScreen(Screen):
         path = Path(self.clone_path)
         if path.exists():
             if Path(f'{self.clone_path}/osa_toolkit/generate.py').is_file():
-                self.clone_destination_text = f"[green]✓[/green] {self.clone_path} is a valid OpenStack-Ansible directory."
+                self.clone_destination_text = \
+                    f"[green]✓[/green] {self.clone_path} is a valid OpenStack-Ansible directory."
                 return True
         return False
 
@@ -225,6 +226,7 @@ class CloneOSAScreen(Screen):
     def action_pop_screen(self) -> None:
         """Pops the current screen from the screen stack."""
         self.dismiss(None)
+
 
 class BootstrapOsaSreen(ModalScreen):
     BINDINGS = [
