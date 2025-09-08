@@ -26,7 +26,7 @@ def path_writable(path: str, parent: bool = False) -> bool:
     return os.access(path, os.W_OK)
 
 
-async def get_openstack_series(releases_uri: str) -> list:
+def get_openstack_series(releases_uri: str) -> list:
     """Fetch and parse currently maintained releases from upstream repository"""
 
     uri = os.path.join(releases_uri, 'data/series_status.yaml')
@@ -46,7 +46,7 @@ async def get_openstack_series(releases_uri: str) -> list:
     return active_series
 
 
-async def get_osa_versions(releases_uri: str, release: str) -> list:
+def get_osa_versions(releases_uri: str, release: str) -> list:
     """Fetch and parse available versions for given release"""
     uri = os.path.join(releases_uri, f'deliverables/{release}/openstack-ansible.yaml')
     try:
