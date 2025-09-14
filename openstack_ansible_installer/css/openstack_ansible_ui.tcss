@@ -127,7 +127,14 @@ PathInputScreen {
 }
 
 /* Yes/No confirmation dialog */
-ConfirmScreen, CreateNewEntryScreen, GitCloneScreen, BootstrapOsaSreen {
+ConfirmScreen,
+CreateNewEntryScreen,
+GitCloneScreen,
+BootstrapOsaSreen,
+AddHostScreen,
+CreateGroupScreen,
+ConfirmExitScreen
+{
     align: center middle;
 }
 
@@ -163,13 +170,14 @@ ConfirmScreen, CreateNewEntryScreen, GitCloneScreen, BootstrapOsaSreen {
     content-align: center middle;
 }
 
-#confirm_dialog {
+#confirm_dialog,
+{
     grid-size: 2;
     grid-gutter: 1 2;
     grid-rows: 1fr 3;
     padding: 0 1 1 6;
     width: 60;
-    height: 11;
+    height: 25%;
     border: thick $background 80%;
     background: $surface;
 }
@@ -360,7 +368,7 @@ ConfirmScreen, CreateNewEntryScreen, GitCloneScreen, BootstrapOsaSreen {
     align-horizontal: center;
 }
 
-#confirm-git-clone, #cancel-git-clone, {
+#confirm-git-clone, #cancel-git-clone {
     width: 20;
     content-align: center middle;
 }
@@ -382,4 +390,43 @@ ConfirmScreen, CreateNewEntryScreen, GitCloneScreen, BootstrapOsaSreen {
 
 .clone-completed #accept-git-clone {
     display: block;
+}
+
+/* screens.inventory.AddHostScreen */
+
+
+/* Styling for dialogs within ModalScreens */
+#add_host_dialog,
+#create_group_dialog {
+    grid-size: 2;
+    padding: 0 2;
+    width: 80;
+    border: thick $background 80%;
+    background: $surface;
+    height: auto;
+    max-height: 90%;
+}
+
+#add_host_dialog {
+    grid-rows: 5 2 5 2 5 5 1fr;
+}
+
+#create_group_dialog {
+    grid-rows: 5 5 1fr 5;
+    max-height: 70%;
+}
+
+
+#add_host_message,
+#add_ipaddr_message {
+    column-span: 2;
+    padding: 0 2;
+}
+
+.inventory-button-row {
+    grid-size: 2;
+    column-span: 2;
+    width: 100%;
+    margin-top: 1;
+    align-horizontal: center;
 }

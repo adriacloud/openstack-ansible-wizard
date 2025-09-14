@@ -1,2 +1,2 @@
-textual
 hacking
+stestr>=2.0.0
