@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 from pathlib import Path
 
@@ -21,10 +22,10 @@ from textual.widgets import Header, Footer, Button, Static
 from textual.reactive import reactive
 from textual.screen import Screen
 
-from screens.bootstrap import CloneOSAScreen
-from screens.configuration import ConfigurationScreen
-from screens.editor import FileBrowserEditorScreen
-from screens.path_selector import PathInputScreen
+from openstack_ansible_installer.screens.bootstrap import CloneOSAScreen
+from openstack_ansible_installer.screens.editor import FileBrowserEditorScreen
+from openstack_ansible_installer.screens.inventory import ConfigurationScreen
+from openstack_ansible_installer.screens.path_selector import PathInputScreen
 
 
 class InitialCheckScreen(Screen):
@@ -49,9 +50,9 @@ class InitialCheckScreen(Screen):
                 yield Button("Bootstrap OpenStack-Ansible", id="clone_osa", variant="primary", disabled=True)
                 yield Button("Custom OpenStack-Ansible Path", id="custom_osa_path", variant="default", disabled=True)
             with HorizontalGroup(classes="button-row"):
-                yield Button("Generate configuration", id="generate_config", variant="primary", disabled=True)
-                yield Button("Custom Configuation Path", id="custom_config_path", variant="default", disabled=True)
+                yield Button("Inventory configuration", id="inventory_config", variant="primary", disabled=True)
                 yield Button.warning("Editor", id="open_editor", disabled=True)
+                yield Button("Custom Configuation Path", id="custom_config_path", variant="default", disabled=True)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -73,7 +74,7 @@ class InitialCheckScreen(Screen):
 
         clone_button = self.query_one("#clone_osa", Button)
         custom_osa_path_button = self.query_one("#custom_osa_path", Button)
-        proceed_config_button = self.query_one("#generate_config", Button)
+        proceed_config_button = self.query_one("#inventory_config", Button)
         custom_config_button = self.query_one("#custom_config_path", Button)
         open_editor_button = self.query_one("#open_editor", Button)
 
@@ -101,7 +102,8 @@ class InitialCheckScreen(Screen):
             self.add_class("config-found")
             if Path(f'{self.osa_conf_dir}/openstack_user_config.yml').is_file():
                 etc_status_widget.update(f"[green]✓[/green] {self.osa_conf_dir} exists.")
-                status_message_widget.update(f"Directory {self.osa_conf_dir} found. Opening editor...")
+                status_message_widget.update("")
+                status_message_widget.display = False
                 proceed_config_button.disabled = True
                 open_editor_button.disabled = False
                 check_config_success = True
@@ -121,7 +123,11 @@ class InitialCheckScreen(Screen):
 
         if check_osa_success and check_config_success:
             # Automatically switch to editor if all required settings exist
-            self.call_after_refresh(lambda: self.app.push_screen(FileBrowserEditorScreen(initial_path=str(etc_path))))
+            # self.call_after_refresh(lambda: self.app.push_screen(FileBrowserEditorScreen(initial_path=str(etc_path))))
+            open_editor_button.disabled = False
+            proceed_config_button.disabled = False
+            custom_config_button.disabled = False
+            open_editor_button.visible = True
 
     @on(Button.Pressed, "#clone_osa")
     @work
@@ -151,10 +157,10 @@ class InitialCheckScreen(Screen):
             self.osa_conf_dir = custom_osa_config_resp  # Update the reactive path
             self.check_paths()  # Re-check paths with the new custom path
 
-    @on(Button.Pressed, "#generate_config")
-    def generate_config(self) -> None:
+    @on(Button.Pressed, "#inventory_config")
+    def configure_inventory(self) -> None:
         """Pushes the configuration screen."""
-        self.app.push_screen(ConfigurationScreen())  # Pushing instance
+        self.app.push_screen(ConfigurationScreen(config_path=self.osa_conf_dir, osa_path=self.osa_clone_dir))
 
     @on(Button.Pressed, "#open_editor")
     def open_editor(self) -> None:

@@ -15,7 +15,7 @@
 
 from textual.app import App
 
-from screens.initial import InitialCheckScreen
+from openstack_ansible_installer.screens.initial import InitialCheckScreen
 
 
 class OpenStackAnsibleApp(App):

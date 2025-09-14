@@ -23,10 +23,10 @@ from textual.screen import Screen, ModalScreen
 
 from textual.reactive import reactive
 
-from common import git as cm_git
-from common import utils
-from screens.git import GitCloneScreen
-from screens.path_selector import PathInputScreen
+from openstack_ansible_installer.common import git as cm_git
+from openstack_ansible_installer.common import utils
+from openstack_ansible_installer.screens.git import GitCloneScreen
+from openstack_ansible_installer.screens.path_selector import PathInputScreen
 
 OSA_REPOSITORY = "https://opendev.org/openstack/openstack-ansible"
 RELEASES_REPOSITORY = "https://opendev.org/openstack/releases/raw"
