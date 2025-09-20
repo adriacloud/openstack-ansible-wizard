@@ -23,6 +23,7 @@ from textual.widgets import Header, Footer, Button, Static, DirectoryTree, Input
 
 from openstack_ansible_installer.extensions.button import NavigableButton
 from openstack_ansible_installer.extensions.textarea import YAMLTextArea
+from openstack_ansible_installer.common.screens import ConfirmExitScreen
 
 
 class FileBrowserEditorScreen(Screen):
@@ -136,7 +137,7 @@ class FileBrowserEditorScreen(Screen):
             return
 
         confirm_message = f"Are you sure you want to delete '{self.current_file_path.name}'?"
-        confirmed = await self.app.push_screen_wait(ConfirmScreen(confirm_message))
+        confirmed = await self.app.push_screen_wait(ConfirmExitScreen(confirm_message))
 
         status_message = self.query_one("#editor_status", Static)
         if confirmed:
@@ -246,33 +247,3 @@ class CreateNewEntryScreen(ModalScreen):
     def action_dismiss_none(self) -> None:
         """Dismisses the screen with no result (cancel)."""
         self.dismiss(None)
-
-
-class ConfirmScreen(ModalScreen[bool]):  # Screen[bool] indicates it dismisses with a boolean
-    """A modal screen for confirming an action."""
-
-    BINDINGS = [
-        ("escape", "cancel", "Back"),
-    ]
-
-    def __init__(self, message: str, name: str | None = None, id: str | None = None, classes: str | None = None):
-        super().__init__(name=name, id=id, classes=classes)
-        self.message = message
-
-    def compose(self) -> ComposeResult:
-        yield Grid(
-            Label(self.message, classes="title", id="confirm_question"),
-            NavigableButton.success("Yes", id="confirm_yes"),
-            NavigableButton("No", id="confirm_no", variant="primary"),
-            id="confirm_dialog"
-        )
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "confirm_yes":
-            self.dismiss(True)
-        elif event.button.id == "confirm_no":
-            self.dismiss(False)
-
-    def action_cancel(self) -> None:
-        """Dismisses the screen with a False value when escape is pressed."""
-        self.dismiss(False)

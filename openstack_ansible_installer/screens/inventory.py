@@ -25,6 +25,7 @@ from textual.reactive import reactive
 from ruamel.yaml import YAML, YAMLError
 from textual import on, work
 
+from openstack_ansible_installer.common.screens import ConfirmExitScreen
 
 class AddHostScreen(ModalScreen):
     """A modal screen to add a new host."""
@@ -158,30 +159,6 @@ class CreateGroupScreen(ModalScreen):
     @on(Button.Pressed, "#cancel_button")
     def action_pop_screen(self) -> None:
         self.dismiss(None)
-
-
-class ConfirmExitScreen(ModalScreen[bool]):
-    """A modal screen to confirm exiting with unsaved changes."""
-
-    BINDINGS = [
-        ("escape", "pop_screen", "Back"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Grid(
-            Label("You have unsaved changes.\nAre you sure you want to exit?", classes="title", id="confirm_question"),
-            Button("Yes, exit", variant="error", id="exit-without-save"),
-            Button("No, stay", variant="primary", id="stay-to-save"),
-            id="confirm_dialog"
-        )
-
-    @on(Button.Pressed, "#exit-without-save")
-    def on_exit_button(self) -> None:
-        self.dismiss(True)
-
-    @on(Button.Pressed, "#stay-to-save")
-    def action_pop_screen(self) -> None:
-        self.dismiss(False)
 
 
 class ConfigurationScreen(Screen):
@@ -545,14 +522,18 @@ class ConfigurationScreen(Screen):
 
     def action_safe_quit(self) -> None:
         """Handle back button press by calling the action worker."""
-        self.action_pop_screen()
+        self.action_pop_screen(action="quit")
 
     @work
-    async def action_pop_screen(self) -> None:
-        """Pops the current screen from the screen stack, confirming if there are unsaved changes."""
+    async def action_pop_screen(self, action: str = "pop") -> None:
+        """Pops the screen or exits the app, confirming if there are unsaved changes."""
+        proceed = True
         if self.has_unsaved_changes():
-            confirmed = await self.app.push_screen_wait(ConfirmExitScreen())
-            if confirmed:
+            message = "You have unsaved changes.\nAre you sure you want to exit?"
+            proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
+
+        if proceed:
+            if action == 'pop':
                 self.app.pop_screen()
-        else:
-            self.app.pop_screen()
+            elif action == 'quit':
+                self.app.exit()
