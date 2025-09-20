@@ -43,7 +43,6 @@ class OpenStackAnsibleApp(App):
         """Called when the app is mounted."""
         self.push_screen(InitialCheckScreen())
 
-
-if __name__ == "__main__":
+def main():
     app = OpenStackAnsibleApp()
     app.run()
