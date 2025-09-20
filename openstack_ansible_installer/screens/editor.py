@@ -35,7 +35,7 @@ class FileBrowserEditorScreen(Screen):
         ("delete", "delete_file", "Delete"),
     ]
 
-    current_file_path = reactive(None)
+    selected_path: reactive[Path | None] = reactive(None)
 
     def __init__(self, initial_path: str, name: str | None = None, id: str | None = None, classes: str | None = None):
         super().__init__(name=name, id=id, classes=classes)
@@ -59,7 +59,7 @@ class FileBrowserEditorScreen(Screen):
                 yield YAMLTextArea.code_editor(id="text_editor", language="yaml", show_line_numbers=True)
                 with HorizontalScroll(classes="content-buttons"):
                     yield Button("New", id="new_button", variant="primary")
-                    yield Button.success("Save File", id="save_button")
+                    yield Button("Save File", id="save_button", variant="success")
                     yield Button.warning("Delete File", id="delete_button")
         yield Footer()
 
@@ -70,46 +70,66 @@ class FileBrowserEditorScreen(Screen):
         editor.disabled = True  # Disable until a file is loaded
         editor.theme = self._editor_theme(self.app.current_theme)
         self.query_one("#save_button", Button).disabled = True
+        self.query_one("#delete_button", Button).disabled = True
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
-        """Loads the content of the selected file into the text editor."""
-        self.current_file_path = event.path
+        """Handles selection of a file in the DirectoryTree."""
+        self.selected_path = event.path
         editor = self.query_one("#text_editor", YAMLTextArea)
-        editor.theme = self._editor_theme(self.app.current_theme)
         save_button = self.query_one("#save_button", Button)
         delete_button = self.query_one("#delete_button", Button)
         status_message = self.query_one("#editor_status", Static)
+        self.remove_class("directory-selected")
+
         try:
-            with open(self.current_file_path, "r") as f:
+            with open(self.selected_path, "r") as f:
                 content = f.read()
             editor.load_text(content)
             editor.disabled = False
             save_button.disabled = False
+            delete_button.label = "Delete File"
             delete_button.disabled = False
-            self.add_class("file-selected")
-            status_message.update(f"Editing: [green]{self.current_file_path}[/green]")
+            self.remove_class("no-file")
+            status_message.update(f"Editing: [green]{self.selected_path}[/green]")
         except Exception as e:
             editor.load_text(f"Could not open file: {e}")
             editor.disabled = True
             save_button.disabled = True
             delete_button.disabled = True
             self.add_class("no-file")
-            status_message.update(f"[red]Error:[/red] Could not open {self.current_file_path}")
-            self.log(f"Error opening file {self.current_file_path}: {e}")
+            status_message.update(f"[red]Error:[/red] Could not open {self.selected_path}")
+            self.log(f"Error opening file {self.selected_path}: {e}")
+
+    def on_directory_tree_directory_selected(self, event: DirectoryTree.DirectorySelected) -> None:
+        """Handles selection of a directory in the DirectoryTree."""
+        self.selected_path = event.path
+        editor = self.query_one("#text_editor", YAMLTextArea)
+        save_button = self.query_one("#save_button", Button)
+        delete_button = self.query_one("#delete_button", Button)
+        status_message = self.query_one("#editor_status", Static)
+
+        editor.load_text("")
+        editor.disabled = True
+        save_button.disabled = True
+        delete_button.label = "Delete Directory"
+        delete_button.disabled = False
+        self.add_class("no-file")
+        self.add_class("directory-selected")
+        status_message.update(f"Selected directory: [green]{self.selected_path}[/green]")
 
     @on(Button.Pressed, "#save_button")
     def action_save_file(self) -> None:
         """Saves the current content of the editor to the file."""
-        if self.current_file_path:
+        if self.selected_path and self.selected_path.is_file():
             editor = self.query_one("#text_editor", YAMLTextArea)
             status_message = self.query_one("#editor_status", Static)
             try:
-                with open(self.current_file_path, "w") as f:
+                with open(self.selected_path, "w") as f:
                     f.write(editor.text)
-                status_message.update(f"[green]File saved successfully:[/green] {self.current_file_path}")
+                status_message.update(f"[green]File saved successfully:[/green] {self.selected_path}")
             except Exception as e:
                 status_message.update(f"[red]Error saving file:[/red] {e}")
-                self.log(f"Error saving file {self.current_file_path}: {e}")
+                self.log(f"Error saving file {self.selected_path}: {e}")
         else:
             self.query_one("#editor_status", Static).update("[yellow]No file selected to save.[/yellow]")
 
@@ -117,12 +137,20 @@ class FileBrowserEditorScreen(Screen):
     @on(Button.Pressed, "#new_button")
     async def action_create_new(self) -> None:
         """Pushes a screen to create a new file or directory."""
-        result = await self.app.push_screen_wait(CreateNewEntryScreen(base_path=self.initial_path))
+        base_path = self.initial_path
+        if self.selected_path and self.selected_path.is_dir():
+            base_path = self.selected_path
+        elif self.selected_path and self.selected_path.is_file():
+            base_path = self.selected_path.parent
+
+        result = await self.app.push_screen_wait(CreateNewEntryScreen(base_path=Path(base_path)))
         status_message = self.query_one("#editor_status", Static)
         self.log(f"creation result is {result}")
         if result:
             name, entry_type = result
-            status_message.update(f"[green]Successfully created {entry_type}:[/green] {self.initial_path}/{name}")
+            new_path = Path(base_path) / name
+            status_message.update(
+                f"[green]Successfully created {entry_type}:[/green] {new_path}")
             self.query_one("#file_tree", DirectoryTree).reload()
         else:
             status_message.update("[yellow]New entry creation cancelled.[/yellow]")
@@ -131,27 +159,27 @@ class FileBrowserEditorScreen(Screen):
     @on(Button.Pressed, "#delete_button")
     async def action_delete_file(self) -> None:
         """Deletes the currently selected file after confirmation."""
-        if not self.current_file_path:
-            self.query_one("#editor_status", Static).update("[yellow]No file selected to delete.[/yellow]")
+        if not self.selected_path:
+            self.query_one("#editor_status", Static).update("[yellow]No file or directory selected to delete.[/yellow]")
             return
 
-        confirm_message = f"Are you sure you want to delete '{self.current_file_path.name}'?"
+        confirm_message = f"Are you sure you want to delete '{self.selected_path.name}'?"
         confirmed = await self.app.push_screen_wait(ConfirmExitScreen(confirm_message))
 
         status_message = self.query_one("#editor_status", Static)
         if confirmed:
             try:
                 # Check if it's a file or directory before unlinking (files) or rmdir (empty dirs)
-                if self.current_file_path.is_file():
-                    self.current_file_path.unlink()
-                    status_message.update(f"[green]File deleted successfully:[/green] {self.current_file_path.name}")
-                elif self.current_file_path.is_dir():
+                if self.selected_path.is_file():
+                    self.selected_path.unlink()
+                    status_message.update(f"[green]File deleted successfully:[/green] {self.selected_path.name}")
+                elif self.selected_path.is_dir():
                     # For a directory, it must be empty to be deleted with rmdir()
-                    self.current_file_path.rmdir()
+                    self.selected_path.rmdir()
                     status_message.update(
-                        f"[green]Directory deleted successfully:[/green] {self.current_file_path.name}")
+                        f"[green]Directory deleted successfully:[/green] {self.selected_path.name}")
                 else:
-                    status_message.update(f"[red]Error:[/red] Cannot delete '{self.current_file_path.name}'."
+                    status_message.update(f"[red]Error:[/red] Cannot delete '{self.selected_path.name}'."
                                           "Not a file or empty directory.")
                     return
 
@@ -160,16 +188,19 @@ class FileBrowserEditorScreen(Screen):
                 editor.load_text("")
                 editor.disabled = True
                 self.query_one("#save_button", Button).disabled = True
-                self.query_one("#delete_button", Button).disabled = True
+                delete_button = self.query_one("#delete_button", Button)
+                delete_button.disabled = True
+                delete_button.label = "Delete"
+                self.remove_class("directory-selected")
                 self.add_class("no-file")
-                self.current_file_path = None  # Clear the current file selection
+                self.selected_path = None  # Clear the current file selection
                 self.query_one("#file_tree", DirectoryTree).reload()  # Reload the tree
             except OSError as e:
-                status_message.update(f"[red]Error deleting:[/red] {e}")
-                self.log(f"Error deleting {self.current_file_path}: {e}")
+                status_message.update(f"[red]Error deleting[/red] {e.filename}:\n[red]{e.strerror}[/red]")
+                self.log(f"Error deleting {self.selected_path}: {e}")
             except Exception as e:
                 status_message.update(f"[red]An unexpected error occurred:[/red] {e}")
-                self.log(f"Unexpected error deleting {self.current_file_path}: {e}")
+                self.log(f"Unexpected error deleting {self.selected_path}: {e}")
         else:
             status_message.update("[yellow]Deletion cancelled.[/yellow]")
 

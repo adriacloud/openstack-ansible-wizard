@@ -226,6 +226,10 @@ AddEditProviderNetworkScreen
     display: block
 }
 
+.directory-selected #delete_button {
+    display: block
+}
+
 /* Save Button in Editor */
 #save_button, #new_button, #delete_button {
     margin-top: 1;
