@@ -23,10 +23,10 @@ class NavigableButton(Button):
         """Handle key presses for arrow key navigation."""
         if event.key == "left":
             event.prevent_default()
-            self.focus_previous(wrap=False)
+            self.screen.focus_previous()
         elif event.key == "right":
             event.prevent_default()
-            self.focus_next(wrap=False)
+            self.screen.focus_next()
         else:
             # For all other keys, let the base Button class handle them
             await super()._on_key(event)

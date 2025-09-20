@@ -19,6 +19,7 @@ from textual.widgets import Button, Label
 
 from textual import on
 
+from openstack_ansible_installer.extensions.button import NavigableButton
 
 class ConfirmExitScreen(ModalScreen[bool]):
     """A modal screen to confirm exiting with unsaved changes."""
@@ -34,8 +35,8 @@ class ConfirmExitScreen(ModalScreen[bool]):
     def compose(self) -> ComposeResult:
         yield Grid(
             Label(self.message, classes="title", id="confirm_question"),
-            Button("Yes", variant="error", id="confirm_yes"),
-            Button("No", variant="primary", id="confirm_no"),
+            NavigableButton("Yes", variant="error", id="confirm_yes"),
+            NavigableButton("No", variant="primary", id="confirm_no"),
             id="confirm_dialog"
         )
 
