@@ -19,11 +19,10 @@ from textual.containers import VerticalScroll, HorizontalGroup, HorizontalScroll
 from textual import on, work
 from textual.reactive import reactive
 from textual.screen import Screen, ModalScreen
-from textual.widgets import Header, Footer, Button, Static, DirectoryTree, Input, RadioSet, RadioButton, Label
+from textual.widgets import Header, Footer, Button, Static, DirectoryTree, Input, RadioSet, RadioButton
 
-from openstack_ansible_installer.extensions.button import NavigableButton
-from openstack_ansible_installer.extensions.textarea import YAMLTextArea
 from openstack_ansible_installer.common.screens import ConfirmExitScreen
+from openstack_ansible_installer.extensions.textarea import YAMLTextArea
 
 
 class FileBrowserEditorScreen(Screen):

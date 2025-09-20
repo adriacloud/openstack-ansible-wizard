@@ -27,6 +27,7 @@ from textual import on, work
 
 from openstack_ansible_installer.common.screens import ConfirmExitScreen
 
+
 class AddHostScreen(ModalScreen):
     """A modal screen to add a new host."""
 
@@ -144,7 +145,7 @@ class CreateGroupScreen(ModalScreen):
                 else:
                     yield Static("No hosts defined yet.")
             with Grid(classes="inventory-button-row"):
-                yield Button("Create Group", variant="primary", id="create_group_button", classes="confirm-button")
+                yield Button("Add Group", variant="primary", id="create_group_button", classes="confirm-button")
                 yield Button("Cancel", id="cancel_button", classes="confirm-button")
 
     @on(Button.Pressed, "#create_group_button")
@@ -161,7 +162,7 @@ class CreateGroupScreen(ModalScreen):
         self.dismiss(None)
 
 
-class ConfigurationScreen(Screen):
+class InventoryScreen(Screen):
     """A screen for managing OpenStack-Ansible host configurations."""
 
     BINDINGS = [

@@ -21,6 +21,7 @@ from textual import on
 
 from openstack_ansible_installer.extensions.button import NavigableButton
 
+
 class ConfirmExitScreen(ModalScreen[bool]):
     """A modal screen to confirm exiting with unsaved changes."""
 
@@ -30,6 +31,8 @@ class ConfirmExitScreen(ModalScreen[bool]):
 
     def __init__(self, message: str, name: str | None = None, id: str | None = None, classes: str | None = None):
         super().__init__(name=name, id=id, classes=classes)
+        if not message:
+            message = "Are you sure you want to exit?"
         self.message = message
 
     def compose(self) -> ComposeResult:
