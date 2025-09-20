@@ -78,8 +78,9 @@ class AddEditProviderNetworkScreen(ModalScreen):
             )
             yield Label("Groups:")
             yield TextArea(text="\n".join(net.get("group_binds", [])), id="net_groups",
+                           placeholder="e.g., all_containers",
                            tooltip="Groups to which the network should be attached.\n\n"
-                                   "One group per line, e.g.:\ncinder_volume\nnova_compute")
+                                   "Provide one group per line.")
             with Grid(classes="network-button-row"):
                 yield Button(button_label, variant="primary", id="add_provider_network", classes="confirm-button")
                 yield Button("Cancel", id="cancel_button", classes="confirm-button")
@@ -166,12 +167,13 @@ class AddEditCidrNetworkScreen(ModalScreen):
             yield Input(value=cidr_name, placeholder="management",
                         tooltip="Human-readable name of the network", id="cidr_name")
             yield Label("CIDR Value:")
-            yield Input(value=cidr_value, placeholder="192.168.1.0/24", id="cidr_value")
+            yield Input(value=cidr_value, placeholder="e.g., 192.168.1.0/24", id="cidr_value")
             yield Label("Used IPs:")
             yield TextArea(
                 text=used_ips_text, id="cidr_used_ips",
+                placeholder="e.g., 192.168.1.5,192.168.1.10",
                 tooltip="Define IP ranges which are reserved and should NOT be used inside of LXC containers.\n\n"
-                        "One range per line, e.g.:\n192.168.1.5,192.168.1.10"
+                        "One range per line"
             )
             with Grid(classes="network-button-row"):
                 yield Button(button_label, variant="primary", id="add_cidr_button", classes="confirm-button")

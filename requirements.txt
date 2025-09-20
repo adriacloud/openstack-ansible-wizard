@@ -1,4 +1,4 @@
-textual[syntax]<7.0
+textual[syntax]>=6.0,<7.0
 PyYAML>=3.12
 ruamel.yaml>=0.18
 GitPython>=1.0.1

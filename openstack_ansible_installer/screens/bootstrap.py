@@ -276,14 +276,13 @@ class BootstrapOsaSreen(ModalScreen):
         log_widget.clear()
         try:
             proc = await asyncio.create_subprocess_shell(
-                f"cat {self.osa_path}/scripts/bootstrap-ansible.sh",
+                f"{self.osa_path}/scripts/bootstrap-ansible.sh",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 cwd=self.osa_path,
             )
             async for line in proc.stdout:
                 log_widget.write_line(line.decode(errors="replace").rstrip())
-                log_widget.scroll_end(animate=False)
             rc = await proc.wait()
             if rc == 0:
                 self.status_message = "[green]Bootstrap completed successfully.[/green]"
@@ -291,6 +290,7 @@ class BootstrapOsaSreen(ModalScreen):
                 self.status_message = f"[red]Bootstrap failed (exit code {rc}).[/red]"
         except Exception as e:
             self.status_message = f"[red]Error running bootstrap script: {e}[/red]"
+        log_widget.scroll_end(animate=False)
         self.add_class("bootstrap-completed")
 
     @on(Button.Pressed, "#cancel-osa-bootstrap")
