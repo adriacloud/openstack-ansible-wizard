@@ -16,6 +16,7 @@ import copy
 import ipaddress
 from pathlib import Path
 import time
+import yaml
 
 from textual.app import ComposeResult
 from textual.containers import Container, Grid, HorizontalGroup
@@ -321,10 +322,9 @@ class NetworkScreen(Screen):
             self.query_one("#status_message").update(f"[red]File not found: {self.user_config_file}[/red]")
             return
 
-        yaml = YAML()
         try:
             with self.user_config_file.open('r') as f:
-                data = yaml.load(f)
+                data = yaml.safe_load(f)
         except (YAMLError, IOError) as e:
             self.query_one("#status_message").update(f"[red]Error loading YAML: {e}[/red]")
             return
@@ -619,9 +619,9 @@ class NetworkScreen(Screen):
             self.app.bell()
             return
 
-        yaml = YAML()
-        yaml.indent(mapping=2, sequence=4, offset=2)
-        yaml.preserve_quotes = True
+        yaml_parser = YAML()
+        yaml_parser.indent(mapping=2, sequence=4, offset=2)
+        yaml_parser.preserve_quotes = True
 
         # Reconstruct data from the current UI state
         new_cidrs = {name: data['cidr'] for name, data in self.cidr_networks.items()}
@@ -632,7 +632,7 @@ class NetworkScreen(Screen):
         # Load the current file content to update it
         try:
             with self.user_config_file.open('r') as f:
-                config_data = yaml.load(f)
+                config_data = yaml_parser.load(f)
 
             config_data['used_ips'] = new_used_ips
 
@@ -650,11 +650,22 @@ class NetworkScreen(Screen):
             global_overrides['provider_networks'] = self.provider_networks
 
             with self.user_config_file.open('w') as f:
-                yaml.dump(config_data, f)
+                yaml_parser.dump(config_data, f)
                 f.write('\n')
-        except (YAMLError, IOError) as e:
-            status_widget.update(f"[red]Error saving file: {e}[/red]")
-            return
+        except YAMLError as e:
+            if "Duplicate merge keys" in str(e):
+                error_message = (
+                    f"[red]Error saving {self.user_config_file}:[/red]\n\n"
+                    "Legacy YAML syntax with duplicate '<<' merge keys is not supported for modification.\n"
+                    "Please update the file manually to use the modern list syntax, for example:\n\n"
+                    r"  <<: \[*anchor1, *anchor2]"
+                )
+                self.query_one(".status_message", Static).update(error_message)
+                self.app.bell()
+                return  # Stop the save process
+            self.log(f"YAML Error processing {self.user_config_file} for removal: {e}")
+        except IOError as e:
+            self.log(f"IO Error processing {self.user_config_file} for removal: {e}")
 
         status_widget.update("[green]Changes saved successfully.[/green]")
         # Reload configs to reset the 'initial_data' state and reflect the saved state
