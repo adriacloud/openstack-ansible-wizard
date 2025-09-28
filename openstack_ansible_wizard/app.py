@@ -48,7 +48,7 @@ class OpenStackAnsibleApp(App):
 def serve_app(args):
     try:
         from textual_serve.server import Server
-    except ImportError as err:
+    except ImportError:
         raise SystemExit(
             'Required dependencies are missing to serve as a web application! '
             'Please, make sure that OpenStack-Ansible Wizard is installed with '

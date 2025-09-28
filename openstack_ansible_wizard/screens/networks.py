@@ -19,7 +19,7 @@ import time
 
 from textual.app import ComposeResult
 from textual.containers import Container, Grid, HorizontalGroup
-from textual.widgets import Header, Footer, Static, Button, DataTable, Input, Label, Select, TextArea
+from textual.widgets import Header, Footer, Static, Button, DataTable, Input, Label, Select, TextArea, Checkbox
 from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
 from ruamel.yaml import YAML, YAMLError
@@ -36,17 +36,25 @@ class AddEditProviderNetworkScreen(ModalScreen):
     ]
 
     def __init__(
-            self, cidr_options: list[str], network_data: dict | None = None,
+            self, cidr_options: list[str], is_management_network_set: bool,
+            network_data: dict | None = None,
             name: str | None = None, id: str | None = None, classes: str | None = None):
         super().__init__(name, id, classes)
         self.cidr_options = cidr_options
         self.network_data = network_data or {}
+        self.is_management_network_set = is_management_network_set
 
     def compose(self) -> ComposeResult:
         is_editing = bool(self.network_data)
         title = "Edit Provider Network" if is_editing else "Add Provider Network"
         button_label = "Update Network" if is_editing else "Add Network"
         net = self.network_data.get('network', {})
+
+        is_current_management = net.get("is_management_address", False)
+        management_checkbox_disabled = self.is_management_network_set and not is_current_management
+        management_checkbox_tooltip = "Only one network can be defined as management."
+        if management_checkbox_disabled:
+            management_checkbox_tooltip += "\nPlease unselect current active management network first."
 
         # Validate that the network's currently assigned CIDR still exists.
         # If not, reset it to blank to prevent a crash when rendering the Select widget.
@@ -81,6 +89,12 @@ class AddEditProviderNetworkScreen(ModalScreen):
                            placeholder="e.g., all_containers",
                            tooltip="Groups to which the network should be attached.\n\n"
                                    "Provide one group per line.")
+            yield Label("Is Management:")
+            yield Checkbox(
+                "", value=is_current_management, id="is_management_checkbox",
+                disabled=management_checkbox_disabled,
+                tooltip=management_checkbox_tooltip
+            )
             with Grid(classes="network-button-row"):
                 yield Button(button_label, variant="primary", id="add_provider_network", classes="confirm-button")
                 yield Button("Cancel", id="cancel_button", classes="confirm-button")
@@ -126,6 +140,12 @@ class AddEditProviderNetworkScreen(ModalScreen):
         host_bind_override = self.query_one("#host_interface", Input).value.strip() or None
         if host_bind_override or self.network_data.get("network", {}).get("host_bind_override"):
             result["network"]["host_bind_override"] = host_bind_override
+
+        is_management = self.query_one("#is_management_checkbox", Checkbox).value
+        if is_management:
+            result["network"]["is_management_address"] = True
+        elif "is_management_address" in result["network"]:
+            del result["network"]["is_management_address"]
 
         self.dismiss(result)
 
@@ -287,7 +307,7 @@ class NetworkScreen(Screen):
         self.query_one("#edit_cidr_button", Button).display = False
         self.query_one("#delete_cidr_button", Button).display = False
         pn_table = self.query_one("#provider_networks_table", DataTable)
-        pn_table.add_columns("Bridge", "Type", "Interface", "IP From", "Groups")
+        pn_table.add_columns("Mgmt", "Bridge", "Type", "Interface", "IP From", "Groups")
 
         cn_table = self.query_one("#cidr_networks_table", DataTable)
         cn_table.add_columns("Name", "CIDR", "Used IP Ranges")
@@ -360,8 +380,10 @@ class NetworkScreen(Screen):
         pn_table.clear()
         for i, item in enumerate(self.provider_networks):
             net = item.get("network", {})
+            is_mgmt = "✓" if net.get("is_management_address") else ""
             groups = ", ".join(net.get("group_binds", []))
             pn_table.add_row(
+                is_mgmt,
                 net.get("container_bridge", "N/A"),
                 net.get("type", "N/A"),
                 net.get("container_interface", "N/A"),
@@ -452,7 +474,11 @@ class NetworkScreen(Screen):
     async def action_add_provider_network(self) -> None:
         """Show the modal for adding a new provider network."""
         cidr_options = list(self.cidr_networks.keys())
-        new_net_info = await self.app.push_screen_wait(AddEditProviderNetworkScreen(cidr_options=cidr_options))
+        is_management_set = any(p.get('network', {}).get('is_management_address') for p in self.provider_networks)
+        new_net_info = await self.app.push_screen_wait(AddEditProviderNetworkScreen(
+            cidr_options=cidr_options,
+            is_management_network_set=is_management_set
+        ))
 
         if new_net_info:
             current_nets = self.provider_networks.copy()
@@ -469,9 +495,14 @@ class NetworkScreen(Screen):
         index = int(self.selected_pn_key)
         network_to_edit = self.provider_networks[index]
         cidr_options = list(self.cidr_networks.keys())
+        is_management_set_elsewhere = any(
+            p.get('network', {}).get('is_management_address')
+            for i, p in enumerate(self.provider_networks) if i != index
+        )
 
         updated_net_info = await self.app.push_screen_wait(
-            AddEditProviderNetworkScreen(cidr_options=cidr_options, network_data=network_to_edit)
+            AddEditProviderNetworkScreen(cidr_options=cidr_options, network_data=network_to_edit,
+                                         is_management_network_set=is_management_set_elsewhere)
         )
         if updated_net_info:
             current_nets = self.provider_networks.copy()
@@ -575,6 +606,16 @@ class NetworkScreen(Screen):
 
         if not self.has_unsaved_changes():
             status_widget.update("No changes to save.")
+            self.app.bell()
+            return
+
+        # Validate that exactly one management network is set
+        management_nets = [
+            p for p in self.provider_networks if p.get("network", {}).get("is_management_address")
+        ]
+        if len(management_nets) != 1:
+            status_widget.update(
+                "[red]Error: Exactly one provider network must be set as the management network.[/red]")
             self.app.bell()
             return
 

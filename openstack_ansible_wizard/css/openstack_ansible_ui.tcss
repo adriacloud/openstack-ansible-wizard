@@ -417,7 +417,7 @@ AddEditProviderNetworkScreen
 
 #provider_network_dialog{
     max-height: 70%;
-    grid-rows: 4 3 4 4 4 4 4 1fr 5;
+    grid-rows: 4 3 4 4 4 4 4 1fr 5 5;
 }
 
 #cidr_network_dialog {
