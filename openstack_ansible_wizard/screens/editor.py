@@ -19,8 +19,8 @@ from textual.containers import VerticalScroll, HorizontalGroup, HorizontalScroll
 from textual import on, work
 from textual.reactive import reactive
 from textual.screen import Screen, ModalScreen
+from textual.widgets.tree import TreeNode
 from textual.widgets import Header, Footer, Button, Static, DirectoryTree, Input, RadioSet, RadioButton
-
 from openstack_ansible_wizard.common.screens import ConfirmExitScreen
 from openstack_ansible_wizard.extensions.textarea import YAMLTextArea
 
@@ -40,6 +40,8 @@ class FileBrowserEditorScreen(Screen):
     def __init__(self, initial_path: str, name: str | None = None, id: str | None = None, classes: str | None = None):
         super().__init__(name=name, id=id, classes=classes)
         self.initial_path = initial_path
+        self.original_content: str | None = None
+        self._ignore_selection_change = False
 
     @staticmethod
     def _editor_theme(current_theme):
@@ -72,8 +74,17 @@ class FileBrowserEditorScreen(Screen):
         self.query_one("#save_button", Button).disabled = True
         self.query_one("#delete_button", Button).disabled = True
 
-    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
-        """Handles selection of a file in the DirectoryTree."""
+    @work
+    async def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
+        """Handles selection of a file in the DirectoryTree, confirming if there are unsaved changes."""
+        if self._ignore_selection_change:
+            self._ignore_selection_change = False
+            return
+
+        # Handle unsaved changes before proceeding.
+        if not await self._handle_unsaved_changes():
+            return
+
         self.selected_path = event.path
         editor = self.query_one("#text_editor", YAMLTextArea)
         save_button = self.query_one("#save_button", Button)
@@ -84,6 +95,7 @@ class FileBrowserEditorScreen(Screen):
         try:
             with open(self.selected_path, "r") as f:
                 content = f.read()
+            self.original_content = content
             editor.load_text(content)
             editor.disabled = False
             save_button.disabled = False
@@ -92,6 +104,7 @@ class FileBrowserEditorScreen(Screen):
             self.remove_class("no-file")
             status_message.update(f"Editing: [green]{self.selected_path}[/green]")
         except Exception as e:
+            self.original_content = None
             editor.load_text(f"Could not open file: {e}")
             editor.disabled = True
             save_button.disabled = True
@@ -100,14 +113,24 @@ class FileBrowserEditorScreen(Screen):
             status_message.update(f"[red]Error:[/red] Could not open {self.selected_path}")
             self.log(f"Error opening file {self.selected_path}: {e}")
 
-    def on_directory_tree_directory_selected(self, event: DirectoryTree.DirectorySelected) -> None:
-        """Handles selection of a directory in the DirectoryTree."""
+    @work
+    async def on_directory_tree_directory_selected(self, event: DirectoryTree.DirectorySelected) -> None:
+        """Handles selection of a directory, confirming if there are unsaved changes."""
+        if self._ignore_selection_change:
+            self._ignore_selection_change = False
+            return
+
+        # Handle unsaved changes before proceeding.
+        if not await self._handle_unsaved_changes():
+            return
+
         self.selected_path = event.path
         editor = self.query_one("#text_editor", YAMLTextArea)
         save_button = self.query_one("#save_button", Button)
         delete_button = self.query_one("#delete_button", Button)
         status_message = self.query_one("#editor_status", Static)
 
+        self.original_content = None
         editor.load_text("")
         editor.disabled = True
         save_button.disabled = True
@@ -126,6 +149,7 @@ class FileBrowserEditorScreen(Screen):
             try:
                 with open(self.selected_path, "w") as f:
                     f.write(editor.text)
+                self.original_content = editor.text  # Update original content on save
                 status_message.update(f"[green]File saved successfully:[/green] {self.selected_path}")
             except Exception as e:
                 status_message.update(f"[red]Error saving file:[/red] {e}")
@@ -204,9 +228,64 @@ class FileBrowserEditorScreen(Screen):
         else:
             status_message.update("[yellow]Deletion cancelled.[/yellow]")
 
-    def action_pop_screen(self) -> None:
-        """Pops the current screen from the screen stack."""
+    def has_unsaved_changes(self) -> bool:
+        """Check if the editor content has changed since it was loaded or saved."""
+        if self.selected_path and self.selected_path.is_file() and self.original_content is not None:
+            editor = self.query_one("#text_editor", YAMLTextArea)
+            return editor.text != self.original_content
+        return False
+
+    @work
+    async def action_pop_screen(self) -> None:
+        """Pops the screen, confirming if there are unsaved changes."""
+        if self.has_unsaved_changes():
+            message = "You have unsaved changes.\nAre you sure you want to exit the editor?"
+            proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
+            if not proceed:
+                return
         self.app.pop_screen()
+
+    async def _handle_unsaved_changes(self) -> bool:
+        """
+        Checks for unsaved changes and prompts the user if necessary.
+        Returns True if the operation should proceed, False otherwise.
+        """
+        if not self.has_unsaved_changes():
+            return True
+
+        tree = self.query_one("#file_tree", DirectoryTree)
+        path_before_selection = self.selected_path
+
+        message = "You have unsaved changes.\nDiscard changes and continue?"
+        proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
+
+        if not proceed:
+            # User cancelled. Revert the logical path and restore the visual cursor.
+            self.selected_path = path_before_selection
+            node_to_restore = self._find_node_by_path(path_before_selection)
+            if node_to_restore:
+                self._ignore_selection_change = True
+                tree.select_node(node_to_restore)
+            return False
+        return True
+
+    def _find_node_by_path(self, target_path: Path | None) -> TreeNode | None:
+        """Recursively search for a DirectoryTree node by its path."""
+        if not target_path:
+            return None
+
+        tree = self.query_one("#file_tree", DirectoryTree)
+
+        def search(node: TreeNode) -> TreeNode | None:
+            if node.data and node.data.path == target_path:
+                return node
+            for child in node.children:
+                found = search(child)
+                if found:
+                    return found
+            return None
+
+        return search(tree.root)
 
 
 class CreateNewEntryScreen(ModalScreen):
