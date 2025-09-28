@@ -22,11 +22,11 @@ from textual.widgets import Header, Footer, Button, Static
 from textual.reactive import reactive
 from textual.screen import Screen
 
-from openstack_ansible_installer.screens.bootstrap import CloneOSAScreen
-from openstack_ansible_installer.screens.editor import FileBrowserEditorScreen
-from openstack_ansible_installer.screens.inventory import InventoryScreen
-from openstack_ansible_installer.screens.networks import NetworkScreen
-from openstack_ansible_installer.screens.path_selector import PathInputScreen
+from openstack_ansible_wizard.screens.bootstrap import CloneOSAScreen
+from openstack_ansible_wizard.screens.editor import FileBrowserEditorScreen
+from openstack_ansible_wizard.screens.inventory import InventoryScreen
+from openstack_ansible_wizard.screens.networks import NetworkScreen
+from openstack_ansible_wizard.screens.path_selector import PathInputScreen
 
 
 class InitialCheckScreen(Screen):
@@ -43,7 +43,7 @@ class InitialCheckScreen(Screen):
         """Create child widgets for the initial check screen."""
         yield Header()
         with Container(classes="screen-container"):
-            yield Static("OpenStack-Ansible Deployment UI", classes="title")
+            yield Static("OpenStack-Ansible Wizard", classes="title")
             yield Static("Checking for existing setup...", id="status_message", classes="status_message")
             yield Static("", id="osa_path_status", classes="status_message")
             yield Static("", id="etc_path_status", classes="status_message")

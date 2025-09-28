@@ -1,6 +1,6 @@
-# OpenStack-Ansible Installer TUI
+# OpenStack-Ansible Wizard TUI
 
-A user-friendly Textual-based installer and configuration manager for OpenStack-Ansible.
+A user-friendly Textual-based configuration manager for OpenStack-Ansible.
 
 <!-- ![Screenshot Placeholder](https://via.placeholder.com/800x400.png?text=Application+Screenshot) -->
 
@@ -32,8 +32,8 @@ The application is designed to be run from a cloned repository.
 2.  **Clone the Repository**
 
     ```bash
-    git clone https://github.com/adriacloud/openstack-ansible-installer.git
-    cd openstack-ansible-installer
+    git clone https://github.com/adriacloud/openstack-ansible-wizard.git
+    cd openstack-ansible-wizard
     ```
 
 3.  **Create a Virtual Environment** (Recommended)
@@ -56,7 +56,7 @@ The application is designed to be run from a cloned repository.
 Once installed, you can run the application using the console script created during installation:
 
 ```bash
-openstack-ansible-installer
+openstack-ansible-wizard
 ```
 
 ### Environment Variables
@@ -69,7 +69,7 @@ The application uses the following environment variables to determine default pa
 **Example:**
 ```bash
 export OSA_CONFIG_DIR=~/openstack-configs
-openstack-ansible-installer
+openstack-ansible-wizard
 ```
 
 ## License

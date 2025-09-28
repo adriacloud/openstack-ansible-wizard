@@ -25,7 +25,7 @@ from textual.reactive import reactive
 from ruamel.yaml import YAML, YAMLError
 from textual import on, work
 
-from openstack_ansible_installer.common.screens import ConfirmExitScreen
+from openstack_ansible_wizard.common.screens import ConfirmExitScreen
 
 
 class AddEditProviderNetworkScreen(ModalScreen):

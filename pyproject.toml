@@ -3,16 +3,16 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "openstack-ansible-installer"
+name = "openstack-ansible-wizard"
 version = "0.1.0"
 authors = [
   { name="Adria Cloud Services", email="contact@adriacloud.services" },
 ]
-description = "A Textual-based installer for OpenStack-Ansible."
+description = "A Textual-based Wizard for OpenStack-Ansible."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
-keywords = ["openstack", "ansible", "installer", "tui", "textual"]
+keywords = ["openstack", "ansible", "tui", "textual"]
 dynamic = ["dependencies"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -27,20 +27,20 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/adriacloud/openstack-ansible-installer"
-"Bug Tracker" = "https://github.com/adriacloud/openstack-ansible-installer/issues"
+"Homepage" = "https://github.com/adriacloud/openstack-ansible-wizard"
+"Bug Tracker" = "https://github.com/adriacloud/openstack-ansible-wizard/issues"
 
 [project.optional-dependencies]
 serve = ["textual-serve"]
 
 [tool.setuptools.packages.find]
-include = ["openstack_ansible_installer*"]
+include = ["openstack_ansible_wizard*"]
 
 [tool.setuptools.package-data]
-openstack_ansible_installer = ["css/*.tcss"]
+openstack_ansible_wizard = ["css/*.tcss"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
 [project.scripts]
-openstack-ansible-installer = "openstack_ansible_installer.app:main"
+openstack-ansible-wizard = "openstack_ansible_wizard.app:main"

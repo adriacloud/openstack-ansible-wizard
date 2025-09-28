@@ -16,7 +16,7 @@ import argparse
 
 from textual.app import App
 
-from openstack_ansible_installer.screens.initial import InitialCheckScreen
+from openstack_ansible_wizard.screens.initial import InitialCheckScreen
 
 
 class OpenStackAnsibleApp(App):
@@ -72,7 +72,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Startup arguments for OpenStack-Ansible Wizard. "
                     "Launch without arguments for the console TUI",
-        prog="openstack-ansible-installer",
+        prog="openstack-ansible-wizard",
     )
     parser.set_defaults(func=run_app)
 

@@ -20,7 +20,7 @@ from textual import on
 from textual.widgets import Button, Static, Input
 from textual.screen import ModalScreen
 
-from openstack_ansible_installer.common import utils
+from openstack_ansible_wizard.common import utils
 
 
 class PathInputScreen(ModalScreen):

@@ -19,7 +19,7 @@ from textual.widgets import Button, Label
 
 from textual import on
 
-from openstack_ansible_installer.extensions.button import NavigableButton
+from openstack_ansible_wizard.extensions.button import NavigableButton
 
 
 class ConfirmExitScreen(ModalScreen[bool]):
