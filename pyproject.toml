@@ -30,6 +30,9 @@ classifiers = [
 "Homepage" = "https://github.com/adriacloud/openstack-ansible-installer"
 "Bug Tracker" = "https://github.com/adriacloud/openstack-ansible-installer/issues"
 
+[project.optional-dependencies]
+serve = ["textual-serve"]
+
 [tool.setuptools.packages.find]
 include = ["openstack_ansible_installer*"]
 
