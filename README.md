@@ -1,8 +1,10 @@
 # OpenStack-Ansible Wizard TUI
 
+<img src="img/logo.png" alt="drawing" width="350"/><br>
+
 A user-friendly Textual-based configuration manager for OpenStack-Ansible.
 
-<!-- ![Screenshot Placeholder](https://via.placeholder.com/800x400.png?text=Application+Screenshot) -->
+
 
 ## Features
 
