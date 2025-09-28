@@ -22,6 +22,7 @@ A user-friendly Textual-based configuration manager for OpenStack-Ansible.
 -   **Built-in Configuration Editor**:
     -   A powerful side-by-side file browser and YAML editor for direct manipulation of all configuration files.
     -   Supports creating, deleting, and editing files and directories within your configuration path.
+-   **Web TUI Mode**: Serve the entire application as a web-based TUI, accessible from any modern browser.
 
 ## Installation
 
@@ -50,7 +51,11 @@ The application is designed to be run from a cloned repository.
     Install the application and its dependencies using `pip`.
 
     ```bash
+    # For standard TUI usage
     pip install .
+
+    # To include web server capabilities
+    pip install ".[serve]"
     ```
 
 ## Usage
@@ -73,6 +78,20 @@ The application uses the following environment variables to determine default pa
 export OSA_CONFIG_DIR=~/openstack-configs
 openstack-ansible-wizard
 ```
+
+### Web TUI Mode
+
+The application can also be served as a web-based TUI that you can access from your browser. This is useful for running the wizard on a remote server.
+
+First, ensure you have installed the application with the `serve` extras (see Installation section).
+
+Then, run the `serve` command:
+
+```
+openstack-ansible-wizard serve --host localhost --port 8080
+```
+
+You can then access the application by navigating to `http://localhost:8080` in your web browser.
 
 ## License
 
