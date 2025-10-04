@@ -18,21 +18,14 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Container, Grid, HorizontalGroup
 from textual.reactive import reactive
-from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Input, Label, Static
 
 from openstack_ansible_wizard.common.config import load_service_config, save_service_config
-from openstack_ansible_wizard.common.screens import ConfirmExitScreen
+from openstack_ansible_wizard.common.screens import WizardConfigScreen
 
 
-class GenericConfigScreen(Screen):
+class GenericConfigScreen(WizardConfigScreen):
     """A modal screen for generic configuration flags."""
-
-    BINDINGS = [
-        ("escape", "pop_screen", "Back"),
-        ("s", "save_configs", "Save"),
-        ("q", "safe_quit", "Quit"),
-    ]
 
     config_data = reactive(dict)
 
@@ -128,22 +121,3 @@ class GenericConfigScreen(Screen):
             if current_config.get(key) != initial_config.get(key, ""):
                 return True
         return False
-
-    def action_safe_quit(self) -> None:
-        """Handle quit binding."""
-        self.action_pop_screen(action="quit")
-
-    @work
-    async def action_pop_screen(self, action: str = "pop") -> None:
-        """Pops the current screen from the screen stack."""
-
-        if self.has_unsaved_changes():
-            message = "You have unsaved changes.\nAre you sure you want to exit?"
-            proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
-            if not proceed:
-                return
-
-        if action == 'pop':
-            self.app.pop_screen()
-        elif action == 'quit':
-            self.app.exit()

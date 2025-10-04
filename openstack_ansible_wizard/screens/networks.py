@@ -21,12 +21,12 @@ import yaml
 from textual.app import ComposeResult
 from textual.containers import ScrollableContainer, Grid, HorizontalGroup
 from textual.widgets import Header, Footer, Static, Button, DataTable, Input, Label, Select, TextArea, Checkbox
-from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
+from textual.screen import ModalScreen
 from ruamel.yaml import YAML, YAMLError
 from textual import on, work
 
-from openstack_ansible_wizard.common.screens import ConfirmExitScreen
+from openstack_ansible_wizard.common.screens import ConfirmExitScreen, WizardConfigScreen
 
 
 class AddEditProviderNetworkScreen(ModalScreen):
@@ -247,14 +247,8 @@ class AddEditCidrNetworkScreen(ModalScreen):
         self.dismiss(None)
 
 
-class NetworkScreen(Screen):
+class NetworkScreen(WizardConfigScreen):
     """A screen for managing OpenStack-Ansible network configurations."""
-
-    BINDINGS = [
-        ("escape", "pop_screen", "Back"),
-        ("s", "save_configs", "Save Configs"),
-        ("q", "safe_quit", "Quit"),
-    ]
 
     provider_networks = reactive(list)
     cidr_networks = reactive(dict)
@@ -653,19 +647,24 @@ class NetworkScreen(Screen):
                 yaml_parser.dump(config_data, f)
                 f.write('\n')
         except YAMLError as e:
-            if "Duplicate merge keys" in str(e):
+            error_message = str(type(e))
+            if "Duplicate merge keys" in str(e) or "DuplicateKeyError" in str(type(e)):
                 error_message = (
                     f"[red]Error saving {self.user_config_file}:[/red]\n\n"
                     "Legacy YAML syntax with duplicate '<<' merge keys is not supported for modification.\n"
                     "Please update the file manually to use the modern list syntax, for example:\n\n"
                     r"  <<: \[*anchor1, *anchor2]"
                 )
-                self.query_one(".status_message", Static).update(error_message)
-                self.app.bell()
-                return  # Stop the save process
-            self.log(f"YAML Error processing {self.user_config_file} for removal: {e}")
+            self.query_one(".status_message", Static).update(error_message)
+            self.app.bell()
+            self.log(f"YAML Error processing {self.user_config_file} for save: {e}")
+            return  # Stop the save process
+
         except IOError as e:
-            self.log(f"IO Error processing {self.user_config_file} for removal: {e}")
+            error_message = f"IO Error processing {self.user_config_file} for save: {e}"
+            self.log(error_message)
+            self.query_one(".status_message", Static).update(error_message)
+            return
 
         status_widget.update("[green]Changes saved successfully.[/green]")
         # Reload configs to reset the 'initial_data' state and reflect the saved state
@@ -696,21 +695,3 @@ class NetworkScreen(Screen):
             initial_comparable_data["used_ips"] = []
 
         return initial_comparable_data != current_data
-
-    def action_safe_quit(self) -> None:
-        """Handle quit binding."""
-        self.action_pop_screen(action="quit")
-
-    @work
-    async def action_pop_screen(self, action: str = "pop") -> None:
-        """Pops the screen or exits the app, confirming if there are unsaved changes."""
-        if self.has_unsaved_changes():
-            message = "You have unsaved changes.\nAre you sure you want to exit?"
-            proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
-            if not proceed:
-                return
-
-        if action == 'pop':
-            self.app.pop_screen()
-        elif action == 'quit':
-            self.app.exit()

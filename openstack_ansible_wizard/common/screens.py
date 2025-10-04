@@ -14,10 +14,10 @@
 
 from textual.app import ComposeResult
 from textual.containers import Grid
-from textual.screen import ModalScreen
+from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Label
 
-from textual import on
+from textual import on, work
 
 from openstack_ansible_wizard.extensions.button import NavigableButton
 
@@ -50,3 +50,39 @@ class ConfirmExitScreen(ModalScreen[bool]):
     @on(Button.Pressed, "#confirm_no")
     def action_pop_screen(self) -> None:
         self.dismiss(False)
+
+
+class WizardConfigScreen(Screen):
+    """A base screen for wizard pages that handles unsaved changes before exiting."""
+
+    BINDINGS = [
+        ("escape", "pop_screen", "Back"),
+        ("q", "safe_quit", "Quit"),
+        ("s", "save_configs", "Save"),
+    ]
+
+    def has_unsaved_changes(self) -> bool:
+        """This method should be implemented by subclasses to report if there are any unsaved changes."""
+        return False
+
+    def action_save_configs(self) -> None:
+        """This method should be implemented by subclasses to handle saving."""
+        pass
+
+    def action_safe_quit(self) -> None:
+        """Handle quit binding by safely popping the screen."""
+        self.action_pop_screen(action="quit")
+
+    @work
+    async def action_pop_screen(self, action: str = "pop") -> None:
+        """Pops the screen or exits the app, confirming if there are unsaved changes."""
+        if self.has_unsaved_changes():
+            message = "You have unsaved changes.\nAre you sure you want to exit?"
+            proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
+            if not proceed:
+                return
+
+        if action == 'pop':
+            self.app.pop_screen()
+        elif action == 'quit':
+            self.app.exit()
