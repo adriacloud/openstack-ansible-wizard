@@ -71,7 +71,7 @@ class CloneOSAScreen(Screen):
                 yield Button("Clone", id="clone_repo", variant="primary", disabled=True)
             with HorizontalGroup(id="clone-buttons"):
                 yield Button("Change version", id="change_version", variant="default")
-                yield Button("Bootstrap", id="bootstrap_osa", variant="primary")
+                yield Button("Run", id="bootstrap_osa", variant="primary")
         yield Footer()
 
     def on_mount(self) -> None:

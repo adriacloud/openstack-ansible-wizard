@@ -19,7 +19,7 @@ import time
 import yaml
 
 from textual.app import ComposeResult
-from textual.containers import Container, Grid, HorizontalGroup
+from textual.containers import ScrollableContainer, Grid, HorizontalGroup
 from textual.widgets import Header, Footer, Static, Button, DataTable, Input, Label, Select, TextArea, Checkbox
 from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
@@ -192,7 +192,7 @@ class AddEditCidrNetworkScreen(ModalScreen):
             yield Label("Used IPs:")
             yield TextArea(
                 text=used_ips_text, id="cidr_used_ips",
-                placeholder="e.g., 192.168.1.5,192.168.1.10",
+                placeholder="e.g., 192.168.1.50,192.168.1.200",
                 tooltip="Define IP ranges which are reserved and should NOT be used inside of LXC containers.\n\n"
                         "One range per line"
             )
@@ -279,7 +279,7 @@ class NetworkScreen(Screen):
     def compose(self) -> ComposeResult:
         """Create child widgets for the screen."""
         yield Header()
-        with Container(classes="screen-container"):
+        with ScrollableContainer(classes="screen-container"):
             yield Static("Network Configuration", classes="title")
             yield Static(id="status_message", classes="status_message")
 

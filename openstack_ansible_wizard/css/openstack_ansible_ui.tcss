@@ -40,6 +40,12 @@ Button {
     padding: 0 2; /* Padding inside buttons */
 }
 
+DataTable {
+    width: 90%;
+    margin-bottom: 1;
+    padding: 0 1;
+}
+
 Input {
     width: 70%; /* Input takes 70% of parent width */
     margin-bottom: 1;
@@ -134,7 +140,8 @@ AddHostScreen,
 CreateGroupScreen,
 ConfirmExitScreen,
 AddEditCidrNetworkScreen,
-AddEditProviderNetworkScreen
+AddEditProviderNetworkScreen,
+AddEditBindingScreen
 {
     align: center middle;
 }
@@ -389,14 +396,55 @@ AddEditProviderNetworkScreen
     display: block;
 }
 
-/* screens.inventory.AddHostScreen */
+/* Service screens */
 
+.service-column {
+    grid-size: 2;
+}
+
+.service-row {
+    grid-size: 2;
+    height: auto;
+    align-vertical: middle;
+    margin-bottom: 2;
+}
+
+.service-common-column {
+    grid-size: 2;
+    height: 10;
+}
+
+.service-common-row {
+    border: #319931ff;
+    grid-size: 2;
+    height: 5;
+    align-vertical: middle;
+}
+
+.service-button {
+    content-align-vertical: middle;
+    height: 100%;
+    dock: right;
+    height: 1fr;
+    margin-right: 2;
+}
+
+.service-label {
+    content-align-vertical: middle;
+    height: 100%;
+    margin-left: 2;
+}
+
+#haproxy_bindings_table{
+    width: 75%;
+}
 
 /* Styling for dialogs within ModalScreens */
 #add_host_dialog,
 #create_group_dialog,
 #cidr_network_dialog,
-#provider_network_dialog {
+#provider_network_dialog,
+#haproxy_bind_dialog {
     grid-size: 2;
     padding: 0 2;
     width: 80;
@@ -416,8 +464,9 @@ AddEditProviderNetworkScreen
 }
 
 #provider_network_dialog{
-    max-height: 70%;
-    grid-rows: 4 3 4 4 4 4 4 1fr 5 5;
+    min-height: 45;
+    max-height: 50;
+    grid-rows: 4 3 4 4 4 4 4 1fr 4 5;
 }
 
 #cidr_network_dialog {
@@ -425,16 +474,23 @@ AddEditProviderNetworkScreen
     grid-rows: 5 3 5 5 1fr 5;
 }
 
+#haproxy_bind_dialog {
+    grid-rows: 5 2 5 5 5 5;
+    max-height: 30;
+}
+
 #add_host_message,
 #add_ipaddr_message,
 #cidr_error_message,
-#provider_network_error {
+#provider_network_error,
+#haproxy_bind_error {
     column-span: 2;
     padding: 0 2;
 }
 
 .inventory-button-row,
-.network-button-row {
+.network-button-row,
+.modal-button-row {
     grid-size: 2;
     column-span: 2;
     width: 100%;
@@ -446,7 +502,8 @@ AddEditProviderNetworkScreen
 #add_host_dialog > Label,
 #create_group_dialog > Label,
 #cidr_network_dialog > Label,
-#provider_network_dialog > Label {
+#provider_network_dialog > Label,
+#haproxy_bind_dialog > Label {
     align-vertical: middle;
     padding-top: 1;
 }
