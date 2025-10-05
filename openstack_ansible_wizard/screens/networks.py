@@ -616,6 +616,7 @@ class NetworkScreen(WizardConfigScreen):
         yaml_parser = YAML()
         yaml_parser.indent(mapping=2, sequence=4, offset=2)
         yaml_parser.preserve_quotes = True
+        yaml_parser.explicit_start = True
 
         # Reconstruct data from the current UI state
         new_cidrs = {name: data['cidr'] for name, data in self.cidr_networks.items()}

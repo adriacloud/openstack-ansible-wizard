@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-import yaml
 import copy
 import ipaddress
+from pathlib import Path
 from ruamel.yaml import YAMLError
 import time
+import yaml
 
 from textual import on, work
 from textual.app import ComposeResult
@@ -138,6 +138,7 @@ class AddEditBindingScreen(ModalScreen):
 class HAProxyConfigScreen(WizardConfigScreen):
     """A modal screen for configuring HAProxy and Keepalived."""
 
+    SERVICE_NAME = "haproxy"
     config_data = reactive(dict)
     bindings = reactive(list)
 
@@ -220,7 +221,7 @@ class HAProxyConfigScreen(WizardConfigScreen):
 
     @work(thread=True)
     def load_configs(self) -> None:
-        data, error = load_service_config(self.config_path, "haproxy")
+        data, error = load_service_config(self.config_path, self.SERVICE_NAME)
         if error:
             self.query_one("#haproxy_status_message").update(f"[red]{error}[/red]")
             return
@@ -400,7 +401,7 @@ class HAProxyConfigScreen(WizardConfigScreen):
 
         try:
             # The new function handles directory creation and saving
-            save_service_config(self.config_path, "haproxy", new_config)
+            save_service_config(self.config_path, self.SERVICE_NAME, new_config)
             status_widget.update("[green]Changes saved successfully.[/green]")
             self.load_configs()
         except (YAMLError, IOError) as e:
@@ -486,3 +487,16 @@ class HAProxyConfigScreen(WizardConfigScreen):
             if current_config.get(key) != initial_config.get(key):
                 return True
         return False
+
+    @classmethod
+    def get_managed_keys(cls) -> set[str]:
+        """Returns a set of configuration keys managed by this screen."""
+        return {
+            "haproxy_ssl_all_vips",
+            "haproxy_vip_binds",
+            "haproxy_in_lxc",
+            "haproxy_use_keepalived",
+            "haproxy_keepalived_external_vip_cidr",
+            "haproxy_keepalived_internal_vip_cidr",
+            "lxc_container_networks",
+        }

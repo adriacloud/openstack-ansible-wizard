@@ -27,6 +27,7 @@ from openstack_ansible_wizard.common.screens import WizardConfigScreen
 class GenericConfigScreen(WizardConfigScreen):
     """A modal screen for generic configuration flags."""
 
+    SERVICE_NAME = "all"
     config_data = reactive(dict)
 
     def __init__(self, config_path: str, name: str | None = None, id: str | None = None, classes: str | None = None):
@@ -65,7 +66,7 @@ class GenericConfigScreen(WizardConfigScreen):
         if status_widget.render().plain != "Loading configuration...":
             status_widget.update("Loading configuration...")
 
-        data, error = load_service_config(self.config_path, "all")
+        data, error = load_service_config(self.config_path, self.SERVICE_NAME)
         if error:
             self.query_one("#generic_status_message").update(f"[red]{error}[/red]")
             return
@@ -95,7 +96,7 @@ class GenericConfigScreen(WizardConfigScreen):
         }
 
         try:
-            save_service_config(self.config_path, "all", new_config)
+            save_service_config(self.config_path, self.SERVICE_NAME, new_config)
             status_widget.update("[green]Changes saved successfully.[/green]")
             self.load_configs()
         except Exception as e:
@@ -121,3 +122,8 @@ class GenericConfigScreen(WizardConfigScreen):
             if current_config.get(key) != initial_config.get(key, ""):
                 return True
         return False
+
+    @classmethod
+    def get_managed_keys(cls) -> set[str]:
+        """Returns a set of configuration keys managed by this screen."""
+        return {"internal_lb_vip_address", "external_lb_vip_address"}

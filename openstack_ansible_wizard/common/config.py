@@ -12,9 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 from pathlib import Path
-import shutil
 from ruamel.yaml import YAML, YAMLError
+
+from openstack_ansible_wizard.common.screens import WizardConfigScreen
+from openstack_ansible_wizard.screens import services
+
+
+def _get_managed_keys_for_service(service_name: str) -> set[str]:
+    """Dynamically finds the managed keys for a given service by inspecting screen classes."""
+    for name, obj in inspect.getmembers(services, inspect.ismodule):
+        for _, class_obj in inspect.getmembers(obj, inspect.isclass):
+            if issubclass(class_obj, WizardConfigScreen) and hasattr(class_obj, 'SERVICE_NAME') and \
+                    class_obj.SERVICE_NAME == service_name:
+                return class_obj.get_managed_keys()
+    return set()
 
 
 def load_service_config(config_path: str, service_name: str) -> tuple[dict, str | None]:
@@ -44,40 +57,65 @@ def load_service_config(config_path: str, service_name: str) -> tuple[dict, str 
         ]
         new_name = None
 
+    yaml_loader = YAML()
+    yaml_writer = YAML()
+    yaml_writer.indent(mapping=2, sequence=4, offset=2)
+    yaml_writer.explicit_start = True
+    managed_keys = _get_managed_keys_for_service(service_name)
+    legacy_managed_config = {}
+
     for legacy_file in legacy_files:
         if legacy_file.exists():
             try:
-                # Move and rename to avoid being picked up by Ansible in the old location
-                if not new_name:
-                    new_name = f"migrated_{legacy_file.name}"
-                shutil.move(str(legacy_file), str(service_dir_path / new_name))
+                with legacy_file.open('r') as f:
+                    data = yaml_loader.load(f) or {}
+
+                unmanaged_data = {}
+                for key, value in data.items():
+                    if key in managed_keys:
+                        legacy_managed_config[key] = value
+                    else:
+                        unmanaged_data[key] = value
+
+                if unmanaged_data:
+                    if not new_name:
+                        new_name = f"migrated_{legacy_file.name}"
+                    with (service_dir_path / new_name).open('w') as f:
+                        yaml_writer.dump(unmanaged_data, f)
+                legacy_file.unlink()  # Remove the original file now that the new one is written.
             except (IOError, OSError) as e:
-                return {}, f"Error moving legacy file {legacy_file.name}: {e}"
+                return {}, f"Error migrating legacy file {legacy_file.name}: {e}"
 
     # Load all YAML files from the service-specific directory.
     # The loading order is alphabetical, which is generally fine.
     merged_config = {}
-    yaml = YAML()
-    config_files = list(service_dir_path.glob("*.yml")) + list(service_dir_path.glob("*.yaml"))
-    # Ensure wizard.yml is loaded last to have the highest precedence
-    config_files.sort(key=lambda p: p.name == "wizzard.yml")
-    for file in sorted(service_dir_path.glob("*.y*ml")):
+    yaml_loader = YAML()
+    # Sort files to ensure a consistent merge order, with 'wizard.yml' loaded last.
+    config_files = sorted(service_dir_path.glob("*.y*ml"), key=lambda p: (p.name != 'wizard.yml', p.name))
+    for file in config_files:
         if file.exists():
             try:
-                with file.open('r') as f:
-                    data = yaml.load(f) or {}
+                with file.open() as f:
+                    data = yaml_loader.load(f) or {}
                     merged_config.update(data)
             except (YAMLError, IOError) as e:
                 return {}, f"Error loading {file.name}: {e}"
 
-    return merged_config, None
+    # The final config is the legacy managed values updated with anything loaded
+    # from the service directory. This ensures wizard.yml takes precedence,
+    # but legacy values are used as defaults if wizard.yml doesn't exist.
+    final_config = legacy_managed_config.copy()
+    final_config.update(merged_config)
+
+    return final_config, None
 
 
 def save_service_config(config_path: str, service_name: str, data: dict) -> None:
     """Saves configuration data to the wizard-specific YAML file."""
-    save_path = Path(config_path) / "group_vars" / service_name / "wizzard.yml"
+    save_path = Path(config_path) / "group_vars" / service_name / "wizard.yml"
     save_path.parent.mkdir(parents=True, exist_ok=True)
     yaml = YAML()
     yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml.explicit_start = True
     with save_path.open('w') as f:
         yaml.dump(data, f)

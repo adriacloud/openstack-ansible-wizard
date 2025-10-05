@@ -454,6 +454,7 @@ class InventoryScreen(WizardConfigScreen):
         # Remove old group definitions, preserving file structure
         yaml_parser = YAML()
         yaml_parser.preserve_quotes = True
+        yaml_parser.explicit_start = True
         for file_path_str, groups_to_remove in files_to_modify.items():
             file_path = Path(file_path_str)
             if not file_path.exists():

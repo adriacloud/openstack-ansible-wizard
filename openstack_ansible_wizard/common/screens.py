@@ -61,6 +61,11 @@ class WizardConfigScreen(Screen):
         ("s", "save_configs", "Save"),
     ]
 
+    @classmethod
+    def get_managed_keys(cls) -> set[str]:
+        """Returns a set of configuration keys managed by this screen."""
+        return set()
+
     def has_unsaved_changes(self) -> bool:
         """This method should be implemented by subclasses to report if there are any unsaved changes."""
         return False
