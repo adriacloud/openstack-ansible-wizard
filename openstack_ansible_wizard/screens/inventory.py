@@ -498,7 +498,7 @@ class InventoryScreen(WizardConfigScreen):
         conf_d_path = Path(self.config_path) / "conf.d"
         try:
             conf_d_path.mkdir(exist_ok=True)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             error_message = f"Parent folder {conf_d_path} does not exist. Ensure you have initialized OSA_CONFIG_DIR"
             self.query_one("#status_message", Static).update(error_message)
             self.log(error_message)

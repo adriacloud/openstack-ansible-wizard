@@ -14,8 +14,8 @@
 
 import os
 from pathlib import Path
+from shutil import copy as file_copy
 from subprocess import run as p_run
-import shutil
 from sys import executable as py_exec
 
 from textual import on, work
@@ -237,7 +237,7 @@ class InitialCheckScreen(Screen):
             source_secrets_file = Path(self.osa_clone_dir) / "etc" / "openstack_deploy" / "user_secrets.yml"
             dest_secrets_file = conf_dir_path / "user_secrets.yml"
             if source_secrets_file.exists() and not dest_secrets_file.exists():
-                shutil.copy(source_secrets_file, dest_secrets_file)
+                file_copy(source_secrets_file, dest_secrets_file)
                 p_run([
                     py_exec,
                     f"{self.osa_clone_dir}/scripts/pw-token-gen.py",
