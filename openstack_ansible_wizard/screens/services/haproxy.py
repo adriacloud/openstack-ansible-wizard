@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+import yaml
 import copy
 import ipaddress
 from ruamel.yaml import YAMLError
@@ -101,7 +103,7 @@ class AddEditBindingScreen(ModalScreen):
                     pass  # Ignore invalid CIDR
 
         if not interface_input.value and self.is_in_lxc:
-            interface_input.value = "eth1" if event.value == "internal" else "eth5"
+            interface_input.value = "eth1" if event.value == "internal" else "eth20"
 
     @on(Button.Pressed, "#save_binding")
     def on_save(self) -> None:
@@ -161,7 +163,10 @@ class HAProxyConfigScreen(WizardConfigScreen):
                 with Grid(classes="service-column"):
                     with VerticalScroll():
                         yield HorizontalGroup(
-                            Checkbox("Run in LXC container", id="haproxy_in_lxc"),
+                            Checkbox("Run in LXC container", id="haproxy_in_lxc",
+                                     tooltip="Ensure you have configured corresponding Provider Network "
+                                             "bridge/interface and that it is assigned to the `haproxy` "
+                                             "group"),
                             Checkbox("Enable SSL for all VIPs", id="haproxy_ssl_all_vips"),
                             classes="service-row",
                         )
@@ -356,9 +361,9 @@ class HAProxyConfigScreen(WizardConfigScreen):
 
         # Gather data from widgets
         new_config = {
-            "haproxy_in_lxc": self.query_one("#haproxy_in_lxc", Checkbox).value,
             "haproxy_ssl_all_vips": self.query_one("#haproxy_ssl_all_vips", Checkbox).value,
             "haproxy_vip_binds": self.bindings,
+            "haproxy_in_lxc": self.query_one("#haproxy_in_lxc", Checkbox).value,
         }
 
         if self.query_one("#keepalived_enabled", Checkbox).value:
@@ -382,14 +387,72 @@ class HAProxyConfigScreen(WizardConfigScreen):
         else:
             new_config["haproxy_use_keepalived"] = False
 
+        lxc_config, error = self._get_haproxy_lxc_config(new_config["haproxy_in_lxc"])
+        if error:
+            status_widget.update(error)
+            return
+        new_config.update(lxc_config)
+
+        # If not in LXC, ensure the key is completely removed before saving.
+        if not new_config["haproxy_in_lxc"]:
+            if "lxc_container_networks" in new_config:
+                del new_config["lxc_container_networks"]
+
         try:
             # The new function handles directory creation and saving
             save_service_config(self.config_path, "haproxy", new_config)
             status_widget.update("[green]Changes saved successfully.[/green]")
-            # Reload the config to update the initial_data state
             self.load_configs()
         except (YAMLError, IOError) as e:
             status_widget.update(f"[red]Error saving file: {e}[/red]")
+
+    def _get_haproxy_lxc_config(self, is_in_lxc: bool) -> tuple[dict, str | None]:
+        """Manages configs related to running HAProxy in an LXC container.
+
+        - Manages the creation/deletion of `env.d/haproxy.yml`.
+        - Generates the `lxc_container_networks` dictionary.
+
+        Returns:
+            A tuple containing the generated configuration dictionary and an
+            error message string if any.
+        """
+        env_d_path = Path(self.config_path) / "env.d"
+        haproxy_env_file = env_d_path / "haproxy.yml"
+        generated_config = {}
+
+        if is_in_lxc:
+            try:
+                # 1. Manage env.d/haproxy.yml
+                env_d_path.mkdir(exist_ok=True)
+                env_content = {
+                    "container_skel": {
+                        "haproxy_container": {
+                            "properties": {"is_metal": False}
+                        }
+                    }
+                }
+                with haproxy_env_file.open('w') as f:
+                    yaml.dump(env_content, f, indent=2, explicit_start=True)
+
+                # 2. Define the static lxc_container_networks config
+                lxc_networks = {
+                    "lxcbr0_address": {
+                        "bridge": "{{ lxc_net_bridge | default('lxcbr0') }}",
+                        "bridge_type": "{{ lxc_net_bridge_type | default('linuxbridge') }}",
+                        "interface": "eth0",
+                        "type": "veth",
+                        "dhcp_use_routes": False,
+                    }
+                }
+                generated_config["lxc_container_networks"] = lxc_networks
+
+            except (IOError, yaml.YAMLError) as e:
+                return {}, f"[red]Error processing LXC config: {e}[/red]"
+        else:
+            if haproxy_env_file.exists():
+                haproxy_env_file.unlink()
+
+        return generated_config, None
 
     def _get_current_config(self) -> dict:
         """Gathers current configuration from widgets."""
