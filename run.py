@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from openstack_ansible_wizard.app import OpenStackAnsibleApp
+from openstack_ansible_wizard.app import OpenStackAnsibleWizard
 
 if __name__ == "__main__":
-    app = OpenStackAnsibleApp()
+    app = OpenStackAnsibleWizard()
     app.run()

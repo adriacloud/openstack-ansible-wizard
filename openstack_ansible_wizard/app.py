@@ -19,7 +19,7 @@ from textual.app import App
 from openstack_ansible_wizard.screens.initial import InitialCheckScreen
 
 
-class OpenStackAnsibleApp(App):
+class OpenStackAnsibleWizard(App):
     """The main Textual application for OpenStack-Ansible deployment."""
 
     CSS_PATH = "css/openstack_ansible_ui.tcss"
@@ -64,7 +64,7 @@ def serve_app(args):
 
 
 def run_app(args):
-    app = OpenStackAnsibleApp()
+    app = OpenStackAnsibleWizard()
     app.run()
 
 
