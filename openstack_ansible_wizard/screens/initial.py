@@ -45,9 +45,9 @@ class InitialCheckScreen(Screen):
         yield Header()
         with Container(classes="screen-container"):
             yield Static("OpenStack-Ansible Wizard", classes="title")
-            yield Static("Checking for existing setup...", id="status_message", classes="status_message")
-            yield Static("", id="osa_path_status", classes="status_message")
-            yield Static("", id="etc_path_status", classes="status_message")
+            yield Static("Checking for existing setup...", id="status_message", classes="status-message")
+            yield Static("", id="osa_path_status", classes="status-message")
+            yield Static("", id="etc_path_status", classes="status-message")
             with HorizontalGroup(classes="button-row"):
                 yield Button("Bootstrap", id="clone_osa", variant="primary", disabled=True)
                 yield Button("Custom OpenStack-Ansible Path", id="custom_osa_path", variant="default", disabled=True)

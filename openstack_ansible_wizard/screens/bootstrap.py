@@ -60,9 +60,9 @@ class CloneOSAScreen(Screen):
         yield Header()
         with Container(classes="screen-container"):
             yield Static("Clone and Bootstrap OpenStack-Ansible", classes="title")
-            yield Static("Checking for available versions and local state", classes="status_message")
-            yield Static("", id="clone_destination", classes="status_message")
-            yield Static("", id="repository_check", classes="status_message")
+            yield Static("Checking for available versions and local state", classes="status-message")
+            yield Static("", id="clone_destination", classes="status-message")
+            yield Static("", id="repository_check", classes="status-message")
             with HorizontalGroup(classes="select-row"):
                 yield Select((), prompt="Select OpenStack Release", disabled=True,
                              classes="version-selector", id="openstack-version")
@@ -247,7 +247,7 @@ class BootstrapOsaSreen(ModalScreen):
     def compose(self) -> ComposeResult:
         yield Grid(
             Static("Bootstrapping OpenStack-Ansible", classes="title", id="bootstrap-title"),
-            Static("", id="osa-bootstrap-status-message"),
+            Static("", id="osa-bootstrap-status-message", classes="modal-status-message-4"),
             Log(id="osa-bootstrap-progress", auto_scroll=True, highlight=True),
             Grid(
                 Button("Confirm", variant="primary", id="confirm-osa-bootstrap", classes="confirm-button"),

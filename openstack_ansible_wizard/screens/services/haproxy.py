@@ -66,9 +66,9 @@ class AddEditBindingScreen(ModalScreen):
         title = "Edit Binding" if is_editing else "Add Binding"
         button_label = "Update" if is_editing else "Add"
 
-        with Grid(id="haproxy_bind_dialog"):
+        with Grid(id="haproxy_bind_dialog", classes="modal-screen-grid"):
             yield Static(title, classes="title")
-            yield Static(id="haproxy_bind_error", classes="status_message")
+            yield Static(id="haproxy_bind_error", classes="status-message modal-status-message-2")
             yield Label("Type:")
             yield Select(
                 options=[(t, t) for t in self.available_types],
@@ -158,7 +158,7 @@ class HAProxyConfigScreen(WizardConfigScreen):
         yield Header()
         with Container(classes="screen-container"):
             yield Static("HAProxy/Keepalived Configuration", classes="title")
-            yield Static(id="haproxy_status_message", classes="status_message")
+            yield Static(id="haproxy_status_message", classes="status-message")
 
             with Container(id="main_config_container"):
                 with Grid(classes="service-column"):

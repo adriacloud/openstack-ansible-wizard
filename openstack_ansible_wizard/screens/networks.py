@@ -63,9 +63,9 @@ class AddEditProviderNetworkScreen(ModalScreen):
         if current_ip_from_q not in self.cidr_options:
             current_ip_from_q = Select.BLANK
 
-        with Grid(id="provider_network_dialog"):
+        with Grid(id="provider_network_dialog", classes="modal-screen-grid"):
             yield Static(title, classes="title")
-            yield Static(id="provider_network_error", classes="status_message")
+            yield Static(id="provider_network_error", classes="status-message modal-status-message-2")
             yield Label("Bridge:")
             yield Input(value=net.get("container_bridge", ""), id="net_bridge", placeholder="br-mgmt")
             yield Label("Type:")
@@ -96,7 +96,7 @@ class AddEditProviderNetworkScreen(ModalScreen):
                 disabled=management_checkbox_disabled,
                 tooltip=management_checkbox_tooltip
             )
-            with Grid(classes="network-button-row"):
+            with Grid(classes="modal-button-row"):
                 yield Button(button_label, variant="primary", id="add_provider_network", classes="confirm-button")
                 yield Button("Cancel", id="cancel_button", classes="confirm-button")
 
@@ -181,9 +181,9 @@ class AddEditCidrNetworkScreen(ModalScreen):
 
         title = "Edit CIDR Network" if is_editing else "Add CIDR Network"
 
-        with Grid(id="cidr_network_dialog"):
+        with Grid(id="cidr_network_dialog", classes="modal-screen-grid"):
             yield Static(title, classes="title")
-            yield Static(id="cidr_error_message", classes="status_message")
+            yield Static(id="cidr_error_message", classes="status-message modal-status-message-2")
             yield Label("Network Name:")
             yield Input(value=cidr_name, placeholder="management",
                         tooltip="Human-readable name of the network", id="cidr_name")
@@ -196,7 +196,7 @@ class AddEditCidrNetworkScreen(ModalScreen):
                 tooltip="Define IP ranges which are reserved and should NOT be used inside of LXC containers.\n\n"
                         "One range per line"
             )
-            with Grid(classes="network-button-row"):
+            with Grid(classes="modal-button-row"):
                 yield Button(button_label, variant="primary", id="add_cidr_button", classes="confirm-button")
                 yield Button("Cancel", id="cancel_button", classes="confirm-button")
 
@@ -275,7 +275,7 @@ class NetworkScreen(WizardConfigScreen):
         yield Header()
         with ScrollableContainer(classes="screen-container"):
             yield Static("Network Configuration", classes="title")
-            yield Static(id="status_message", classes="status_message")
+            yield Static(id="status_message", classes="status-message")
 
             yield Static("Provider Networks", classes="subtitle")
             yield DataTable(id="provider_networks_table", cursor_type="row", zebra_stripes=True)
@@ -656,7 +656,7 @@ class NetworkScreen(WizardConfigScreen):
                     "Please update the file manually to use the modern list syntax, for example:\n\n"
                     r"  <<: \[*anchor1, *anchor2]"
                 )
-            self.query_one(".status_message", Static).update(error_message)
+            self.query_one("#status_message", Static).update(error_message)
             self.app.bell()
             self.log(f"YAML Error processing {self.user_config_file} for save: {e}")
             return  # Stop the save process
@@ -664,7 +664,7 @@ class NetworkScreen(WizardConfigScreen):
         except IOError as e:
             error_message = f"IO Error processing {self.user_config_file} for save: {e}"
             self.log(error_message)
-            self.query_one(".status_message", Static).update(error_message)
+            self.query_one("#status_message", Static).update(error_message)
             return
 
         status_widget.update("[green]Changes saved successfully.[/green]")
