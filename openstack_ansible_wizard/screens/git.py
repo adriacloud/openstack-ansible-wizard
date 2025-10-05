@@ -81,7 +81,7 @@ class GitCloneScreen(ModalScreen):
         yield Grid(
             Static("Clone OpenStack-Ansible repository", classes="title"),
             Static(f"Confirm clonning OpenStack-Ansible {self.version} to {self.repo_path}",
-                   id="git-clone-status-message"),
+                   id="git-clone-status-message", classes="modal-status-message-4"),
             ProgressBar(
                 total=self.max_progress,
                 show_percentage=True,

@@ -17,10 +17,20 @@
 }
 
 /* Status Messages */
-.status_message {
+.status-message {
     text-align: center;
     margin-bottom: 1;
     padding: 0 2;
+}
+
+.modal-status-message-2 {
+    column-span: 2;
+    padding: 0 2;
+}
+
+.modal-status-message-4 {
+    column-span: 4;
+    content-align: center middle;
 }
 
 /* Button Row Layout */
@@ -130,20 +140,6 @@ PathInputScreen {
     text-align: center;
     margin-bottom: 1;
     padding: 0 2;
-}
-
-/* Yes/No confirmation dialog */
-CreateNewEntryScreen,
-GitCloneScreen,
-BootstrapOsaSreen,
-AddHostScreen,
-CreateGroupScreen,
-ConfirmExitScreen,
-AddEditCidrNetworkScreen,
-AddEditProviderNetworkScreen,
-AddEditBindingScreen
-{
-    align: center middle;
 }
 
 #create_file_dialog{
@@ -290,11 +286,6 @@ AddEditBindingScreen
     margin-bottom: 1;
 }
 
-#osa-bootstrap-status-message {
-    column-span: 4;
-    content-align: center middle;
-}
-
 .no-bootstrap-confirm #osa-bootstrap-progress {
     display: none
 }
@@ -356,11 +347,6 @@ AddEditBindingScreen
     align-vertical: middle;
 }
 
-#git-clone-status-message {
-    column-span: 4;
-    content-align: center middle;
-}
-
 .no-clone-confirm #git-clone-progress {
     display: none
 }
@@ -407,6 +393,7 @@ AddEditBindingScreen
     height: auto;
     align-vertical: middle;
     margin-bottom: 2;
+    width: 1fr;
 }
 
 .service-common-column {
@@ -439,20 +426,6 @@ AddEditBindingScreen
     width: 75%;
 }
 
-/* Styling for dialogs within ModalScreens */
-#add_host_dialog,
-#create_group_dialog,
-#cidr_network_dialog,
-#provider_network_dialog,
-#haproxy_bind_dialog {
-    grid-size: 2;
-    padding: 0 2;
-    width: 80;
-    border: thick $background 80%;
-    background: $surface;
-    height: auto;
-}
-
 #add_host_dialog {
     grid-rows: 5 2 5 2 5 5 1fr;
     max-height: 90%;
@@ -479,17 +452,26 @@ AddEditBindingScreen
     max-height: 30;
 }
 
-#add_host_message,
-#add_ipaddr_message,
-#cidr_error_message,
-#provider_network_error,
-#haproxy_bind_error {
-    column-span: 2;
-    padding: 0 2;
+#pki_dialog {
+    max-height: 51;
+    grid-rows: 4 4;
 }
 
-.inventory-button-row,
-.network-button-row,
+/* Styling for dialogs within ModalScreens */
+ModalScreen
+{
+    align: center middle;
+}
+
+.modal-screen-grid {
+    grid-size: 2;
+    padding: 0 2;
+    width: 80;
+    border: thick $background 80%;
+    background: $surface;
+    height: auto;
+}
+
 .modal-button-row {
     grid-size: 2;
     column-span: 2;
@@ -498,12 +480,7 @@ AddEditBindingScreen
     align-horizontal: center;
 }
 
-/* Vertically align labels with their corresponding input fields in dialogs */
-#add_host_dialog > Label,
-#create_group_dialog > Label,
-#cidr_network_dialog > Label,
-#provider_network_dialog > Label,
-#haproxy_bind_dialog > Label {
+.modal-screen-grid > Label {
     align-vertical: middle;
     padding-top: 1;
 }

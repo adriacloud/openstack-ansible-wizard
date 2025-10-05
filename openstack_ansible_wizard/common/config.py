@@ -45,8 +45,8 @@ def load_service_config(config_path: str, service_name: str) -> tuple[dict, str 
     service_dir_path.mkdir(exist_ok=True)
 
     if service_name == "all":
-        legacy_files = [group_vars_path / "all.yml", group_vars_path / "all.yaml"]
-        new_name = "vars.yml"
+        # For 'all', we treat all non-wizard YAML files in the directory as potential legacy sources.
+        legacy_files = [f for f in service_dir_path.glob("*.y*ml") if f.name not in ("wizard.yml", "wizard.yaml")]
     else:
         # Migrate legacy customer config files if they exist
         legacy_files = [
@@ -55,14 +55,13 @@ def load_service_config(config_path: str, service_name: str) -> tuple[dict, str 
             group_vars_path / f"{service_name}_all.yml",
             group_vars_path / f"{service_name}_all.yaml",
         ]
-        new_name = None
 
     yaml_loader = YAML()
     yaml_writer = YAML()
     yaml_writer.indent(mapping=2, sequence=4, offset=2)
     yaml_writer.explicit_start = True
     managed_keys = _get_managed_keys_for_service(service_name)
-    legacy_managed_config = {}
+    final_legacy_managed_config = {}
 
     for legacy_file in legacy_files:
         if legacy_file.exists():
@@ -71,18 +70,26 @@ def load_service_config(config_path: str, service_name: str) -> tuple[dict, str 
                     data = yaml_loader.load(f) or {}
 
                 unmanaged_data = {}
+                file_managed_config = {}
                 for key, value in data.items():
                     if key in managed_keys:
-                        legacy_managed_config[key] = value
+                        file_managed_config[key] = value
                     else:
                         unmanaged_data[key] = value
 
+                # If there are no managed keys in the file, there's nothing to migrate.
+                if not file_managed_config:
+                    continue
+
                 if unmanaged_data:
-                    if not new_name:
-                        new_name = f"migrated_{legacy_file.name}"
-                    with (service_dir_path / new_name).open('w') as f:
+                    # Rewrite the file with only the unmanaged data.
+                    with legacy_file.open('w') as f:
                         yaml_writer.dump(unmanaged_data, f)
-                legacy_file.unlink()  # Remove the original file now that the new one is written.
+                else:
+                    # If the file only contained managed keys, it's now empty and can be removed.
+                    legacy_file.unlink()
+                # Add the managed keys from this file to the final collection
+                final_legacy_managed_config.update(file_managed_config)
             except (IOError, OSError) as e:
                 return {}, f"Error migrating legacy file {legacy_file.name}: {e}"
 
@@ -104,7 +111,7 @@ def load_service_config(config_path: str, service_name: str) -> tuple[dict, str 
     # The final config is the legacy managed values updated with anything loaded
     # from the service directory. This ensures wizard.yml takes precedence,
     # but legacy values are used as defaults if wizard.yml doesn't exist.
-    final_config = legacy_managed_config.copy()
+    final_config = final_legacy_managed_config.copy()
     final_config.update(merged_config)
 
     return final_config, None

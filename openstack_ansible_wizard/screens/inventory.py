@@ -59,9 +59,9 @@ class AddHostScreen(ModalScreen):
             mgmt_ip = ""
             host_groups = []
 
-        with Grid(id="add_host_dialog"):
+        with Grid(id="add_host_dialog", classes="modal-screen-grid"):
             yield Static(title, classes="title")
-            yield Static(id="add_host_message", classes="message")
+            yield Static(id="add_host_message", classes="modal-status-message-2")
             yield Label("Hostname:")
             yield Input(
                 value=hostname,
@@ -69,7 +69,7 @@ class AddHostScreen(ModalScreen):
                 id="host_name_input",
                 disabled=is_editing
             )
-            yield Static(id="add_ipaddr_message", classes="message")
+            yield Static(id="add_ipaddr_message", classes="modal-status-message-2")
             yield Label("IP Address:")
             yield Input(value=ip, placeholder="e.g., 192.168.1.100", id="ip_input")
             yield Label("Management IP (optional):")
@@ -82,7 +82,7 @@ class AddHostScreen(ModalScreen):
                         value=(group in host_groups),
                         id=f"group_{group}"
                     )
-            with Grid(classes="inventory-button-row"):
+            with Grid(classes="modal-button-row"):
                 yield Button(button_label, variant="primary", id="add_host_button", classes="confirm-button")
                 yield Button("Cancel", id="cancel_button", classes="confirm-button")
 
@@ -133,7 +133,7 @@ class CreateGroupScreen(ModalScreen):
         self.all_hosts = all_hosts
 
     def compose(self) -> ComposeResult:
-        with Grid(id="create_group_dialog"):
+        with Grid(id="create_group_dialog", classes="modal-screen-grid"):
             yield Static("Create New Group", classes="title")
             yield Label("Group Name (e.g., 'compute'):")
             yield Input(placeholder="my-new-group", id="group_name_input")
@@ -144,7 +144,7 @@ class CreateGroupScreen(ModalScreen):
                         yield Checkbox(hostname, id=f"host_{hostname}")
                 else:
                     yield Static("No hosts defined yet.")
-            with Grid(classes="inventory-button-row"):
+            with Grid(classes="modal-button-row"):
                 yield Button("Add Group", variant="primary", id="create_group_button", classes="confirm-button")
                 yield Button("Cancel", id="cancel_button", classes="confirm-button")
 
@@ -203,7 +203,7 @@ class InventoryScreen(WizardConfigScreen):
         yield Header()
         with Container(classes="screen-container"):
             yield Static("OpenStack-Ansible Inventory Manager", classes="title")
-            yield Static(id="status_message", classes="status_message")
+            yield Static(id="status_message", classes="status-message")
             with HorizontalGroup():
                 yield DataTable(id="hosts_table", cursor_type="row", zebra_stripes=True)
             with HorizontalGroup(classes="button-row"):
@@ -403,7 +403,7 @@ class InventoryScreen(WizardConfigScreen):
     @work(thread=True)
     def action_save_configs(self) -> None:
         """Saves changes by rewriting modified groups to standardized files."""
-        self.query_one(".status_message", Static).update("Saving changes...")
+        self.query_one("#status_message", Static).update("Saving changes...")
 
         # Determine which groups have changed
         initial_groups_membership = {}
@@ -439,7 +439,7 @@ class InventoryScreen(WizardConfigScreen):
                     break  # Found a change, so the group is modified. Move to the next group.
 
         if not modified_group_names:
-            self.query_one(".status_message", Static).update("No changes to save.")
+            self.query_one("#status_message", Static).update("No changes to save.")
             self.app.bell()
             return
 
@@ -484,13 +484,13 @@ class InventoryScreen(WizardConfigScreen):
                         "Please update the file manually to use the modern list syntax, for example:\n\n"
                         r"  <<: \[*anchor1, *anchor2]"
                     )
-                self.query_one(".status_message", Static).update(error_message)
+                self.query_one("#status_message", Static).update(error_message)
                 self.app.bell()
                 self.log(error_message)
                 return
             except IOError as e:
                 error_message = f"IO Error processing {file_path} for save: {e}"
-                self.query_one(".status_message", Static).update(error_message)
+                self.query_one("#status_message", Static).update(error_message)
                 self.log(error_message)
                 return
 
@@ -510,7 +510,7 @@ class InventoryScreen(WizardConfigScreen):
             with new_group_file.open('w') as f:
                 yaml_parser.dump(new_group_data, f)
 
-        self.query_one(".status_message", Static).update("[green]Changes saved successfully.[/green]")
+        self.query_one("#status_message", Static).update("[green]Changes saved successfully.[/green]")
         self.load_configs()  # Reload to resync the state, including initial_hosts_data
 
     @on(Button.Pressed, "#add_host_button")
