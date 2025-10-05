@@ -14,6 +14,9 @@
 
 import os
 from pathlib import Path
+from subprocess import run as p_run
+import shutil
+from sys import executable as py_exec
 
 from textual import on, work
 from textual.app import ComposeResult
@@ -26,8 +29,8 @@ from openstack_ansible_wizard.screens.bootstrap import CloneOSAScreen
 from openstack_ansible_wizard.screens.editor import FileBrowserEditorScreen
 from openstack_ansible_wizard.screens.inventory import InventoryScreen
 from openstack_ansible_wizard.screens.networks import NetworkScreen
-from openstack_ansible_wizard.screens.path_selector import PathInputScreen
 from openstack_ansible_wizard.screens.service import ServicesMainScreen
+from openstack_ansible_wizard.common.screens import ConfirmExitScreen, PathInputScreen
 
 
 class InitialCheckScreen(Screen):
@@ -52,6 +55,7 @@ class InitialCheckScreen(Screen):
                 yield Button("Bootstrap", id="clone_osa", variant="primary", disabled=True)
                 yield Button("Custom OpenStack-Ansible Path", id="custom_osa_path", variant="default", disabled=True)
             with HorizontalGroup(classes="button-row"):
+                yield Button("Initialize", id="init_config_dir", variant="success", disabled=True)
                 yield Button("Editor", id="open_editor", variant="warning", disabled=True)
                 yield Button("Custom Configuation Path", id="custom_config_path", variant="default", disabled=True)
             with HorizontalGroup(classes="button-row"):
@@ -82,9 +86,11 @@ class InitialCheckScreen(Screen):
         proceed_config_button = self.query_one("#inventory_config", Button)
         proceed_network_button = self.query_one("#network_config", Button)
         proceed_service_button = self.query_one("#service_config", Button)
+        init_config_button = self.query_one("#init_config_dir", Button)
         custom_config_button = self.query_one("#custom_config_path", Button)
         open_editor_button = self.query_one("#open_editor", Button)
 
+        # init_config_button.display = False
         check_osa_success = False
         check_config_success = False
 
@@ -106,7 +112,6 @@ class InitialCheckScreen(Screen):
             custom_osa_path_button.disabled = False
 
         if etc_path.is_dir():
-            self.add_class("config-found")
             if Path(f'{self.osa_conf_dir}/openstack_user_config.yml').is_file():
                 etc_status_widget.update(f"[green]✓[/green] {self.osa_conf_dir} exists.")
                 status_message_widget.update("")
@@ -114,35 +119,50 @@ class InitialCheckScreen(Screen):
                 proceed_config_button.disabled = True
                 proceed_network_button.disabled = True
                 proceed_service_button.disabled = True
+                init_config_button.display = False
                 open_editor_button.disabled = False
                 check_config_success = True
             else:
-                etc_status_widget.update(f"[red]✗[/red] {self.osa_conf_dir} exists but is not yet configured.")
-                proceed_config_button.disabled = False
-                proceed_network_button.disabled = False
-                proceed_service_button.disabled = False
+                etc_status_widget.update(f"[red]✗[/red] {self.osa_conf_dir} exists but is not yet initialized.")
+                proceed_config_button.disabled = True
+                proceed_config_button.display = False
+                proceed_network_button.disabled = True
+                proceed_network_button.display = False
+                proceed_service_button.disabled = True
+                proceed_service_button.display = False
                 open_editor_button.disabled = False
                 custom_config_button.disabled = False
+                init_config_button.disabled = False
+                init_config_button.display = True
         else:
-            self.add_class("no-config")
             etc_status_widget.update(f"[red]✗[/red] {self.osa_conf_dir} does not exist.")
             if osa_path.is_dir():  # Only suggest config if OSA repo is found
                 status_message_widget.update(f"No {self.osa_conf_dir} found. Proceed to configuration.")
-                proceed_config_button.disabled = False
-                proceed_network_button.disabled = False
-                proceed_service_button.disabled = False
                 custom_config_button.disabled = False
+                init_config_button.disabled = False
+                init_config_button.display = True
+            proceed_config_button.disabled = True
+            proceed_config_button.display = False
+            proceed_network_button.disabled = True
+            proceed_network_button.display = False
+            proceed_service_button.disabled = True
+            proceed_service_button.display = False
             open_editor_button.disabled = True
+            open_editor_button.display = False
 
         if check_osa_success and check_config_success:
             # Automatically switch to editor if all required settings exist
             # self.call_after_refresh(lambda: self.app.push_screen(FileBrowserEditorScreen(initial_path=str(etc_path))))
             open_editor_button.disabled = False
             proceed_config_button.disabled = False
+            proceed_config_button.display = True
             proceed_network_button.disabled = False
+            proceed_network_button.display = True
             proceed_service_button.disabled = False
+            proceed_service_button.display = True
             custom_config_button.disabled = False
-            open_editor_button.visible = True
+            open_editor_button.display = True
+            init_config_button.display = False
 
     @on(Button.Pressed, "#clone_osa")
     @work
@@ -191,3 +211,37 @@ class InitialCheckScreen(Screen):
     def open_editor(self) -> None:
         """Pushes the file browser/editor screen for openstack_deploy."""
         self.app.push_screen(FileBrowserEditorScreen(initial_path=self.osa_conf_dir))
+
+    @on(Button.Pressed, "#init_config_dir")
+    @work
+    async def initialized_osa_config_dir(self):
+        """Pushes confirmation screen about the config dir init"""
+        message = f"Are you sure you want to initialize {self.osa_conf_dir} as OSA_CONFIG_DIR?"
+        init_confirm_result = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
+        if init_confirm_result:
+            conf_dir_path = Path(self.osa_conf_dir)
+            init_directories = [
+                conf_dir_path,
+                conf_dir_path / "conf.d",
+                conf_dir_path / "env.d",
+                conf_dir_path / "group_vars",
+                conf_dir_path / "group_vars" / "all",
+                conf_dir_path / "host_vars"
+            ]
+            for dir in init_directories:
+                dir.mkdir(exist_ok=True)
+
+            (conf_dir_path / "openstack_user_config.yml").touch(exist_ok=True)
+
+            # Copy user_secrets.yml from the OSA repository
+            source_secrets_file = Path(self.osa_clone_dir) / "etc" / "openstack_deploy" / "user_secrets.yml"
+            dest_secrets_file = conf_dir_path / "user_secrets.yml"
+            if source_secrets_file.exists() and not dest_secrets_file.exists():
+                shutil.copy(source_secrets_file, dest_secrets_file)
+                p_run([
+                    py_exec,
+                    f"{self.osa_clone_dir}/scripts/pw-token-gen.py",
+                    "--file",
+                    str(dest_secrets_file)
+                ])
+            self.check_paths()

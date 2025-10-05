@@ -447,7 +447,7 @@ class HAProxyConfigScreen(WizardConfigScreen):
                 }
                 generated_config["lxc_container_networks"] = lxc_networks
 
-            except (IOError, yaml.YAMLError) as e:
+            except (IOError, yaml.YAMLError, FileNotFoundError) as e:
                 return {}, f"[red]Error processing LXC config: {e}[/red]"
         else:
             if haproxy_env_file.exists():

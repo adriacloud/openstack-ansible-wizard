@@ -74,14 +74,6 @@ PathInputScreen {
     padding: 0 2;
 }
 
-.no-config #open_editor {
-    display: none
-}
-
-.config-found #open_editor {
-    display: block
-}
-
 #select_path_dialog{
     grid-size: 4;
     grid-gutter: 1;

@@ -25,8 +25,8 @@ from textual.reactive import reactive
 
 from openstack_ansible_wizard.common import git as cm_git
 from openstack_ansible_wizard.common import utils
+from openstack_ansible_wizard.common.screens import PathInputScreen
 from openstack_ansible_wizard.screens.git import GitCloneScreen
-from openstack_ansible_wizard.screens.path_selector import PathInputScreen
 
 OSA_REPOSITORY = "https://opendev.org/openstack/openstack-ansible"
 RELEASES_REPOSITORY = "https://opendev.org/openstack/releases/raw"

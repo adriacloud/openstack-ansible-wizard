@@ -24,6 +24,7 @@ from textual.widgets import Header, Footer, Static, Button, DataTable, Input, La
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from ruamel.yaml import YAML, YAMLError
+from ruamel.yaml.comments import CommentedMap
 from textual import on, work
 
 from openstack_ansible_wizard.common.screens import ConfirmExitScreen, WizardConfigScreen
@@ -322,6 +323,9 @@ class NetworkScreen(WizardConfigScreen):
         except (YAMLError, IOError) as e:
             self.query_one("#status_message").update(f"[red]Error loading YAML: {e}[/red]")
             return
+
+        if data is None:
+            data = {}
 
         self.initial_data = copy.deepcopy(data)
 
@@ -627,21 +631,22 @@ class NetworkScreen(WizardConfigScreen):
         # Load the current file content to update it
         try:
             with self.user_config_file.open('r') as f:
-                config_data = yaml_parser.load(f)
+                config_data = yaml_parser.load(f) or {}
 
             config_data['used_ips'] = new_used_ips
 
             # To ensure YAML anchors are always used, we first make sure both keys
             # point to the same object, then we modify that object in-place.
             global_overrides = config_data.setdefault('global_overrides', {})
-            if 'cidr_networks' not in config_data:
-                config_data['cidr_networks'] = {}
 
-            # Set the desired anchor name on the shared object.
-            global_overrides['cidr_networks'] = config_data['cidr_networks']
+            # Ensure cidr_networks is a ruamel.yaml object that supports anchors
+            if 'cidr_networks' not in config_data or not hasattr(config_data['cidr_networks'], 'yaml_set_anchor'):
+                config_data['cidr_networks'] = CommentedMap()
+
             config_data['cidr_networks'].yaml_set_anchor('cidr_networks', always_dump=True)
             config_data['cidr_networks'].clear()
             config_data['cidr_networks'].update(new_cidrs)
+            global_overrides['cidr_networks'] = config_data['cidr_networks']
             global_overrides['provider_networks'] = self.provider_networks
 
             with self.user_config_file.open('w') as f:
@@ -673,8 +678,9 @@ class NetworkScreen(WizardConfigScreen):
 
     def has_unsaved_changes(self) -> bool:
         """Check if there are any unsaved changes."""
+        # If the initial data was empty (e.g., new file), any current data is an unsaved change.
         if not self.initial_data:
-            return False
+            return bool(self.provider_networks or self.cidr_networks)
 
         # Reconstruct the original format from the current state
         current_cidrs = {name: data['cidr'] for name, data in self.cidr_networks.items()}

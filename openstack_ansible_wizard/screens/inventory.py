@@ -496,7 +496,14 @@ class InventoryScreen(WizardConfigScreen):
 
         # Write new standardized files for all modified groups
         conf_d_path = Path(self.config_path) / "conf.d"
-        conf_d_path.mkdir(exist_ok=True)
+        try:
+            conf_d_path.mkdir(exist_ok=True)
+        except FileNotFoundError as e:
+            error_message = f"Parent folder {conf_d_path} does not exist. Ensure you have initialized OSA_CONFIG_DIR"
+            self.query_one("#status_message", Static).update(error_message)
+            self.log(error_message)
+            return
+
         for group_name in modified_group_names:
             new_group_file = conf_d_path / f"{group_name}.yml"
             new_group_data = {f"{group_name}_hosts": {}}

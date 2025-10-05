@@ -61,5 +61,5 @@ def get_osa_versions(releases_uri: str, release: str) -> list:
         print('Reason: ', e.reason)
         osa_deliverable = {}
 
-    osa_versions = [version['version'] for version in osa_deliverable.get('releases')]
+    osa_versions = [version['version'] for version in osa_deliverable.get('releases', [])]
     return osa_versions
