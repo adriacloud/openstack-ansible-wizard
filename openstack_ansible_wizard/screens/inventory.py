@@ -20,12 +20,12 @@ import yaml
 from textual.app import ComposeResult
 from textual.containers import Container, Grid, VerticalScroll, HorizontalGroup
 from textual.widgets import Header, Footer, Static, Button, DataTable, Input, Checkbox, Label
-from textual.screen import Screen, ModalScreen
 from textual.reactive import reactive
+from textual.screen import ModalScreen
 from ruamel.yaml import YAML, YAMLError
 from textual import on, work
 
-from openstack_ansible_wizard.common.screens import ConfirmExitScreen
+from openstack_ansible_wizard.common.screens import WizardConfigScreen
 
 
 class AddHostScreen(ModalScreen):
@@ -162,15 +162,12 @@ class CreateGroupScreen(ModalScreen):
         self.dismiss(None)
 
 
-class InventoryScreen(Screen):
+class InventoryScreen(WizardConfigScreen):
     """A screen for managing OpenStack-Ansible host configurations."""
 
-    BINDINGS = [
-        ("escape", "pop_screen", "Back"),
+    BINDINGS = WizardConfigScreen.BINDINGS + [
         ("a", "add_host", "Add Host"),
         ("g", "create_group", "Create Group"),
-        ("s", "save_configs", "Save Configs"),
-        ("q", "safe_quit", "Quit"),
     ]
 
     # This will hold the structured host data
@@ -457,6 +454,7 @@ class InventoryScreen(Screen):
         # Remove old group definitions, preserving file structure
         yaml_parser = YAML()
         yaml_parser.preserve_quotes = True
+        yaml_parser.explicit_start = True
         for file_path_str, groups_to_remove in files_to_modify.items():
             file_path = Path(file_path_str)
             if not file_path.exists():
@@ -478,6 +476,7 @@ class InventoryScreen(Screen):
                         yaml_parser.dump(content, f)
                     self.log(f"Updated config file (removed groups): {file_path}")
             except YAMLError as e:
+                error_message = f"YAML Error processing {file_path} for save: {e}"
                 if "Duplicate merge keys" in str(e):
                     error_message = (
                         f"[red]Error saving {file_path.name}:[/red]\n\n"
@@ -485,12 +484,15 @@ class InventoryScreen(Screen):
                         "Please update the file manually to use the modern list syntax, for example:\n\n"
                         r"  <<: \[*anchor1, *anchor2]"
                     )
-                    self.query_one(".status_message", Static).update(error_message)
-                    self.app.bell()
-                    return  # Stop the save process
-                self.log(f"YAML Error processing {file_path} for removal: {e}")
+                self.query_one(".status_message", Static).update(error_message)
+                self.app.bell()
+                self.log(error_message)
+                return
             except IOError as e:
-                self.log(f"IO Error processing {file_path} for removal: {e}")
+                error_message = f"IO Error processing {file_path} for save: {e}"
+                self.query_one(".status_message", Static).update(error_message)
+                self.log(error_message)
+                return
 
         # Write new standardized files for all modified groups
         conf_d_path = Path(self.config_path) / "conf.d"
@@ -520,21 +522,3 @@ class InventoryScreen(Screen):
     def on_create_group_button_pressed(self) -> None:
         """Handle create group button press."""
         self.action_create_group()
-
-    def action_safe_quit(self) -> None:
-        """Handle back button press by calling the action worker."""
-        self.action_pop_screen(action="quit")
-
-    @work
-    async def action_pop_screen(self, action: str = "pop") -> None:
-        """Pops the screen or exits the app, confirming if there are unsaved changes."""
-        proceed = True
-        if self.has_unsaved_changes():
-            message = "You have unsaved changes.\nAre you sure you want to exit?"
-            proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
-
-        if proceed:
-            if action == 'pop':
-                self.app.pop_screen()
-            elif action == 'quit':
-                self.app.exit()

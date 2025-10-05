@@ -27,6 +27,7 @@ from openstack_ansible_wizard.screens.editor import FileBrowserEditorScreen
 from openstack_ansible_wizard.screens.inventory import InventoryScreen
 from openstack_ansible_wizard.screens.networks import NetworkScreen
 from openstack_ansible_wizard.screens.path_selector import PathInputScreen
+from openstack_ansible_wizard.screens.service import ServicesMainScreen
 
 
 class InitialCheckScreen(Screen):
@@ -48,13 +49,15 @@ class InitialCheckScreen(Screen):
             yield Static("", id="osa_path_status", classes="status_message")
             yield Static("", id="etc_path_status", classes="status_message")
             with HorizontalGroup(classes="button-row"):
-                yield Button("Bootstrap OpenStack-Ansible", id="clone_osa", variant="primary", disabled=True)
+                yield Button("Bootstrap", id="clone_osa", variant="primary", disabled=True)
                 yield Button("Custom OpenStack-Ansible Path", id="custom_osa_path", variant="default", disabled=True)
+            with HorizontalGroup(classes="button-row"):
+                yield Button("Editor", id="open_editor", variant="warning", disabled=True)
+                yield Button("Custom Configuation Path", id="custom_config_path", variant="default", disabled=True)
             with HorizontalGroup(classes="button-row"):
                 yield Button("Inventory configuration", id="inventory_config", variant="primary", disabled=True)
                 yield Button("Network configuration", id="network_config", variant="primary", disabled=True)
-                yield Button.warning("Editor", id="open_editor", disabled=True)
-                yield Button("Custom Configuation Path", id="custom_config_path", variant="default", disabled=True)
+                yield Button("Service configuration", id="service_config", variant="primary", disabled=True)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -78,6 +81,7 @@ class InitialCheckScreen(Screen):
         custom_osa_path_button = self.query_one("#custom_osa_path", Button)
         proceed_config_button = self.query_one("#inventory_config", Button)
         proceed_network_button = self.query_one("#network_config", Button)
+        proceed_service_button = self.query_one("#service_config", Button)
         custom_config_button = self.query_one("#custom_config_path", Button)
         open_editor_button = self.query_one("#open_editor", Button)
 
@@ -109,12 +113,14 @@ class InitialCheckScreen(Screen):
                 status_message_widget.display = False
                 proceed_config_button.disabled = True
                 proceed_network_button.disabled = True
+                proceed_service_button.disabled = True
                 open_editor_button.disabled = False
                 check_config_success = True
             else:
                 etc_status_widget.update(f"[red]✗[/red] {self.osa_conf_dir} exists but is not yet configured.")
                 proceed_config_button.disabled = False
                 proceed_network_button.disabled = False
+                proceed_service_button.disabled = False
                 open_editor_button.disabled = False
                 custom_config_button.disabled = False
         else:
@@ -124,6 +130,7 @@ class InitialCheckScreen(Screen):
                 status_message_widget.update(f"No {self.osa_conf_dir} found. Proceed to configuration.")
                 proceed_config_button.disabled = False
                 proceed_network_button.disabled = False
+                proceed_service_button.disabled = False
                 custom_config_button.disabled = False
             open_editor_button.disabled = True
 
@@ -133,6 +140,7 @@ class InitialCheckScreen(Screen):
             open_editor_button.disabled = False
             proceed_config_button.disabled = False
             proceed_network_button.disabled = False
+            proceed_service_button.disabled = False
             custom_config_button.disabled = False
             open_editor_button.visible = True
 
@@ -173,6 +181,11 @@ class InitialCheckScreen(Screen):
     def configure_networks(self) -> None:
         """Pushes the network configuration screen."""
         self.app.push_screen(NetworkScreen(config_path=self.osa_conf_dir, osa_path=self.osa_clone_dir))
+
+    @on(Button.Pressed, "#service_config")
+    def configure_services(self) -> None:
+        """Pushes the main service configuration screen."""
+        self.app.push_screen(ServicesMainScreen(config_path=self.osa_conf_dir, osa_path=self.osa_clone_dir))
 
     @on(Button.Pressed, "#open_editor")
     def open_editor(self) -> None:

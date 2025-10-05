@@ -18,19 +18,17 @@ from textual.app import ComposeResult
 from textual.containers import VerticalScroll, HorizontalGroup, HorizontalScroll, Grid
 from textual import on, work
 from textual.reactive import reactive
-from textual.screen import Screen, ModalScreen
+from textual.screen import ModalScreen
 from textual.widgets.tree import TreeNode
 from textual.widgets import Header, Footer, Button, Static, DirectoryTree, Input, RadioSet, RadioButton
-from openstack_ansible_wizard.common.screens import ConfirmExitScreen
+from openstack_ansible_wizard.common.screens import ConfirmExitScreen, WizardConfigScreen
 from openstack_ansible_wizard.extensions.textarea import YAMLTextArea
 
 
-class FileBrowserEditorScreen(Screen):
+class FileBrowserEditorScreen(WizardConfigScreen):
     """A screen displaying a directory tree and a text editor."""
 
-    BINDINGS = [
-        ("escape", "pop_screen", "Back"),
-        ("s", "save_file", "Save File"),
+    BINDINGS = WizardConfigScreen.BINDINGS + [
         ("n", "create_new", "Create New"),
         ("delete", "delete_file", "Delete"),
     ]
@@ -141,7 +139,7 @@ class FileBrowserEditorScreen(Screen):
         status_message.update(f"Selected directory: [green]{self.selected_path}[/green]")
 
     @on(Button.Pressed, "#save_button")
-    def action_save_file(self) -> None:
+    def action_save_configs(self) -> None:
         """Saves the current content of the editor to the file."""
         if self.selected_path and self.selected_path.is_file():
             editor = self.query_one("#text_editor", YAMLTextArea)
@@ -234,16 +232,6 @@ class FileBrowserEditorScreen(Screen):
             editor = self.query_one("#text_editor", YAMLTextArea)
             return editor.text != self.original_content
         return False
-
-    @work
-    async def action_pop_screen(self) -> None:
-        """Pops the screen, confirming if there are unsaved changes."""
-        if self.has_unsaved_changes():
-            message = "You have unsaved changes.\nAre you sure you want to exit the editor?"
-            proceed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
-            if not proceed:
-                return
-        self.app.pop_screen()
 
     async def _handle_unsaved_changes(self) -> bool:
         """
