@@ -140,12 +140,12 @@ class GenericConfigScreen(WizardConfigScreen):
                         Input(id="external_lb_vip_address", placeholder="e.g., example.cloud"),
                         classes="service-row",
                     )
-                with VerticalScroll():
                     yield HorizontalGroup(
-                        Label("Manage PKI configuration:", classes="service-label"),
-                        Button("Configure PKI", id="pki_button", variant="default"),
+                        Label("PKI configuration:", classes="service-label"),
+                        Button("Manage", id="pki_button", variant="default"),
                         classes="service-row",
                     )
+
             with HorizontalGroup(classes="button-row-single"):
                 yield Button("Save Changes", id="save_button", variant="success")
         yield Footer()
