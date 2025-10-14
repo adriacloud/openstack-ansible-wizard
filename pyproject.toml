@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openstack-ansible-wizard"
+version = "0.1.0"
+authors = [
+  { name="Adria Cloud Services", email="contact@adriacloud.services" },
+]
+description = "A Textual-based Wizard for OpenStack-Ansible."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+keywords = ["openstack", "ansible", "tui", "textual"]
+dynamic = ["dependencies"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Installation/Setup",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/adriacloud/openstack-ansible-wizard"
+"Bug Tracker" = "https://github.com/adriacloud/openstack-ansible-wizard/issues"
+
+[project.optional-dependencies]
+serve = ["textual-serve"]
+
+[tool.setuptools.packages.find]
+include = ["openstack_ansible_wizard*"]
+
+[tool.setuptools.package-data]
+openstack_ansible_wizard = ["css/*.tcss"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.scripts]
+openstack-ansible-wizard = "openstack_ansible_wizard.app:main"
