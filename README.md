@@ -1,6 +1,6 @@
 # OpenStack-Ansible Wizard TUI
 
-<img src="img/logo.png" alt="drawing" width="350"/><br>
+<img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/logo.png" alt="drawing" width="350"/><br>
 
 A user-friendly Textual-based configuration manager for OpenStack-Ansible.
 
@@ -12,27 +12,27 @@ A user-friendly Textual-based configuration manager for OpenStack-Ansible.
 -   **Guided Setup**: Automatically checks for your OpenStack-Ansible repository and configuration directories, guiding you through the first steps.
 -   **Guided Bootstrapping**:
 
-    <img src="img/osa-wizard-bootstrap.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-bootstrap.gif" alt="drawing" width="500"/><br>
 
     -   Fetches available OpenStack releases and corresponding OpenStack-Ansible versions directly from OpenDev.
     -   Clones the exact version of the OpenStack-Ansible repository you need.
     -   Runs the `bootstrap-ansible.sh` script and displays live log output.
 -   **Inventory Management**:
 
-    <img src="img/osa-wizard-inventory.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-inventory.gif" alt="drawing" width="500"/><br>
 
     -   Visually manage your inventory hosts and groups in an interactive table.
     -   Easily add, edit, and assign hosts to groups through intuitive forms.
     -   Saves changes back to your configuration files, automatically organizing groups into standardized files under `conf.d/`.
 -   **Network Configuration**:
 
-    <img src="img/osa-wizard-network.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-network.gif" alt="drawing" width="500"/><br>
 
     -   Create, edit and delete CIDR definitions together with used subnets
     -   Manage provider networks definitions
 -   **Services Configuration**: Manage most common settings and scenarios in (almost) intuitive way
 
-    <img src="img/osa-wizard-config.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-config.gif" alt="drawing" width="500"/><br>
 
     -   Configure Public/Private endpoint names
     -   Define details for issued self-signed Certificate Authority
@@ -40,13 +40,13 @@ A user-friendly Textual-based configuration manager for OpenStack-Ansible.
     -   More to come soon!
 -   **Built-in Configuration Editor**:
 
-    <img src="img/osa-wizard-editor.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-editor.gif" alt="drawing" width="500"/><br>
 
     -   A powerful side-by-side file browser and YAML editor for direct manipulation of all configuration files.
     -   Supports creating, deleting, and editing files and directories within your configuration path.
 -   **Web TUI Mode**: Serve the entire application as a web-based TUI, accessible from any modern browser.
 
-    <img src="img/osa-wizard-web-serve.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-web-serve.gif" alt="drawing" width="500"/><br>
 
 -   **Can be used with existing deployments**: At your own risk, of course! We are trying our best to have compatibility and do not break existing environments, but this is not always guaranteed.
 ## Installation
@@ -77,10 +77,20 @@ The application is designed to be run from a cloned repository.
 
     ```bash
     # For standard TUI usage
-    pip install .
+    pip install -i https://test.pypi.org/simple/ openstack-ansible-wizard
 
     # To include web server capabilities
-    pip install ".[serve]"
+    pip install -i https://test.pypi.org/simple/ openstack-ansible-wizard[serve]
+    ```
+
+    You can also run the application without installation, which might be
+    convenient during development:
+
+    ```bash
+    # Install requirements manually
+    pip install -r requirements.txt
+    # Run application
+    python3 run.py
     ```
 
 ## Usage
