@@ -439,6 +439,11 @@ PathInputScreen {
     grid-rows: 5 3 5 5 1fr 5;
 }
 
+#static_route_dialog {
+    max-height: 35;
+    grid-rows: 5 3 5 5 5;
+}
+
 #haproxy_bind_dialog {
     grid-rows: 5 2 5 5 5 5;
     max-height: 30;

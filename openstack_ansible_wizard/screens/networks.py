@@ -30,6 +30,85 @@ from textual import on, work
 from openstack_ansible_wizard.common.screens import ConfirmExitScreen, WizardConfigScreen
 
 
+class AddEditStaticRouteScreen(ModalScreen):
+    """A modal screen to add or edit a static route."""
+
+    BINDINGS = [
+        ("escape", "pop_screen", "Back"),
+    ]
+
+    def __init__(
+            self, provider_network_options: list[str],
+            route_data: dict | None = None,
+            name: str | None = None, id: str | None = None, classes: str | None = None):
+        super().__init__(name, id, classes)
+        self.provider_network_options = provider_network_options
+        self.route_data = route_data or {}
+
+    def compose(self) -> ComposeResult:
+        is_editing = bool(self.route_data)
+        title = "Edit Static Route" if is_editing else "Add Static Route"
+        button_label = "Update Route" if is_editing else "Add Route"
+
+        with Grid(id="static_route_dialog", classes="modal-screen-grid"):
+            yield Static(title, classes="title")
+            yield Static(id="static_route_error", classes="status-message modal-status-message-2")
+            yield Label("Provider Network:")
+            yield Select(
+                options=[(name, name) for name in self.provider_network_options],
+                value=self.route_data.get("network_bridge", Select.BLANK),
+                id="route_network_bridge",
+                allow_blank=False,
+                disabled=is_editing  # Can't change the parent network when editing
+            )
+            yield Label("CIDR:")
+            yield Input(value=self.route_data.get("cidr", ""), id="route_cidr", placeholder="0.0.0.0/0")
+            yield Label("Gateway:")
+            yield Input(value=self.route_data.get("gateway", ""), id="route_gateway", placeholder="192.168.1.1")
+
+            with Grid(classes="modal-button-row"):
+                yield Button(button_label, variant="primary", id="add_static_route", classes="confirm-button")
+                yield Button("Cancel", id="cancel_button", classes="confirm-button")
+
+    @on(Button.Pressed, "#add_static_route")
+    def on_save(self) -> None:
+        error_widget = self.query_one("#static_route_error", Static)
+        network_bridge = self.query_one("#route_network_bridge", Select).value
+        cidr = self.query_one("#route_cidr", Input).value.strip()
+        gateway = self.query_one("#route_gateway", Input).value.strip()
+
+        if not all([network_bridge, cidr, gateway]):
+            error_widget.update("[red]All fields are required.[/red]")
+            return
+
+        # Validate CIDR
+        try:
+            ipaddress.ip_network(cidr, strict=False)
+        except ValueError:
+            error_widget.update(f"[red]'{cidr}' is not a valid network CIDR.[/red]")
+            self.app.bell()
+            return
+
+        # Validate Gateway
+        try:
+            ipaddress.ip_address(gateway)
+        except ValueError:
+            error_widget.update(f"[red]'{gateway}' is not a valid Gateway IP address.[/red]")
+            self.app.bell()
+            return
+
+        result = {
+            "network_bridge": network_bridge,
+            "cidr": cidr,
+            "gateway": gateway,
+        }
+        self.dismiss(result)
+
+    @on(Button.Pressed, "#cancel_button")
+    def action_pop_screen(self) -> None:
+        self.dismiss(None)
+
+
 class AddEditProviderNetworkScreen(ModalScreen):
     """A modal screen to add or edit a provider network."""
 
@@ -38,11 +117,12 @@ class AddEditProviderNetworkScreen(ModalScreen):
     ]
 
     def __init__(
-            self, cidr_options: list[str], is_management_network_set: bool,
+            self, cidr_options: list[str], existing_interfaces: list[str], is_management_network_set: bool,
             network_data: dict | None = None,
             name: str | None = None, id: str | None = None, classes: str | None = None):
         super().__init__(name, id, classes)
         self.cidr_options = cidr_options
+        self.existing_interfaces = existing_interfaces
         self.network_data = network_data or {}
         self.is_management_network_set = is_management_network_set
 
@@ -122,6 +202,10 @@ class AddEditProviderNetworkScreen(ModalScreen):
 
         if errors:
             error_widget.update(f"[red]Required fields cannot be empty:\n{', '.join(errors)}.[/red]")
+            return
+
+        if interface in self.existing_interfaces:
+            error_widget.update(f"[red]Container Interface '{interface}' is already in use.[/red]")
             return
 
         # Start with a copy of the original data to preserve un-edited fields.
@@ -253,6 +337,7 @@ class NetworkScreen(WizardConfigScreen):
 
     provider_networks = reactive(list)
     cidr_networks = reactive(dict)
+    static_routes = reactive(list)
 
     def __init__(
             self, config_path: str, osa_path: str,
@@ -270,6 +355,10 @@ class NetworkScreen(WizardConfigScreen):
         self._last_pn_row_click_time = 0.0
         self._last_clicked_pn_row_key = None
         self.selected_pn_key: str | None = None
+        # For handling double-clicks on the Static Route table
+        self._last_sr_row_click_time = 0.0
+        self._last_clicked_sr_row_key = None
+        self.selected_sr_key: str | None = None
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the screen."""
@@ -292,6 +381,13 @@ class NetworkScreen(WizardConfigScreen):
                 yield Button("Edit CIDR", id="edit_cidr_button", variant="default", disabled=True)
                 yield Button("Delete CIDR", id="delete_cidr_button", variant="error", disabled=True)
 
+            yield Static("Static Routes", classes="subtitle")
+            yield DataTable(id="static_routes_table", cursor_type="row", zebra_stripes=True)
+            with HorizontalGroup(classes="button-row"):
+                yield Button("Add Route", id="add_static_route_button", variant="primary")
+                yield Button("Edit Route", id="edit_static_route_button", variant="default", disabled=True)
+                yield Button("Delete Route", id="delete_static_route_button", variant="error", disabled=True)
+
             with HorizontalGroup(classes="button-row-single"):
                 yield Button("Save Changes", id="save_button", variant="success")
         yield Footer()
@@ -302,11 +398,17 @@ class NetworkScreen(WizardConfigScreen):
         self.query_one("#delete_provider_net_button", Button).display = False
         self.query_one("#edit_cidr_button", Button).display = False
         self.query_one("#delete_cidr_button", Button).display = False
+        self.query_one("#edit_static_route_button", Button).display = False
+        self.query_one("#delete_static_route_button", Button).display = False
+
         pn_table = self.query_one("#provider_networks_table", DataTable)
         pn_table.add_columns("Mgmt", "Bridge", "Type", "Interface", "IP From", "Groups")
 
         cn_table = self.query_one("#cidr_networks_table", DataTable)
         cn_table.add_columns("Name", "CIDR", "Used IP Ranges")
+
+        sr_table = self.query_one("#static_routes_table", DataTable)
+        sr_table.add_columns("Network", "CIDR", "Gateway")
 
         self.load_configs()
 
@@ -365,9 +467,22 @@ class NetworkScreen(WizardConfigScreen):
             except ValueError:
                 self.log(f"Warning: Invalid IP address or range '{ip_range_str}' found in used_ips.")
 
+        # Process static routes
+        processed_routes = []
+        for i, p_net in enumerate(provider_networks_raw):
+            net_info = p_net.get("network", {})
+            bridge = net_info.get("container_bridge")
+            if bridge and "static_routes" in net_info:
+                for route in net_info["static_routes"]:
+                    processed_routes.append({
+                        "network_bridge": bridge,
+                        **route
+                    })
+
         # Set reactive properties
         self.provider_networks = provider_networks_raw
         self.cidr_networks = processed_cidrs
+        self.static_routes = processed_routes
 
         self.call_after_refresh(self.update_tables)
 
@@ -397,14 +512,37 @@ class NetworkScreen(WizardConfigScreen):
             used_ips_str = ", ".join(data.get("used_ips", []))
             cn_table.add_row(name, data.get("cidr", "N/A"), used_ips_str, key=name)
 
+        # Static Routes
+        sr_table = self.query_one("#static_routes_table", DataTable)
+        sr_table.clear()
+        for i, route in enumerate(self.static_routes):
+            sr_table.add_row(
+                route.get("network_bridge", "N/A"),
+                route.get("cidr", "N/A"),
+                route.get("gateway", "N/A"),
+                key=str(i)
+            )
+
     def watch_cidr_networks(self, _: dict) -> None:
         """When CIDR network data changes, update the table."""
         if self.is_mounted:
             self.update_tables()
 
-    def watch_provider_networks(self, _: list) -> None:
-        """When provider network data changes, update the table."""
+    def watch_provider_networks(self, new_provider_networks: list) -> None:
+        """When provider network data changes, re-process derived data and update tables."""
         if self.is_mounted:
+            # Re-process static routes from the updated provider networks
+            processed_routes = []
+            for i, p_net in enumerate(new_provider_networks):
+                net_info = p_net.get("network", {})
+                bridge = net_info.get("container_bridge")
+                if bridge and "static_routes" in net_info:
+                    for route in net_info["static_routes"]:
+                        processed_routes.append({
+                            "network_bridge": bridge,
+                            **route
+                        })
+            self.static_routes = processed_routes
             self.update_tables()
 
     @on(DataTable.RowSelected, "#cidr_networks_table")
@@ -467,14 +605,50 @@ class NetworkScreen(WizardConfigScreen):
         delete_provider_net_button.display = False
         self.selected_pn_key = None
 
+    @on(DataTable.RowSelected, "#static_routes_table")
+    def on_sr_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle Static Route table row selection."""
+        edit_button = self.query_one("#edit_static_route_button", Button)
+        edit_button.disabled = False
+        edit_button.display = True
+        delete_button = self.query_one("#delete_static_route_button", Button)
+        delete_button.disabled = False
+        delete_button.display = True
+        self.selected_sr_key = event.row_key.value
+
+        current_time = time.time()
+        if (current_time - self._last_sr_row_click_time < 0.5) and (event.row_key == self._last_clicked_sr_row_key):
+            self.action_edit_static_route()
+            self._last_sr_row_click_time = 0.0
+        else:
+            self._last_sr_row_click_time = current_time
+            self._last_clicked_sr_row_key = event.row_key
+
+    @on(DataTable.HeaderSelected, "#static_routes_table")
+    def on_sr_header_selected(self, event: DataTable.HeaderSelected) -> None:
+        """Handle clearing selection in the Static Route table."""
+        edit_button = self.query_one("#edit_static_route_button", Button)
+        edit_button.disabled = True
+        edit_button.display = False
+        delete_button = self.query_one("#delete_static_route_button", Button)
+        delete_button.disabled = True
+        delete_button.display = False
+        self.selected_sr_key = None
+
     @on(Button.Pressed, "#add_provider_net_button")
     @work
     async def action_add_provider_network(self) -> None:
         """Show the modal for adding a new provider network."""
         cidr_options = list(self.cidr_networks.keys())
+        existing_interfaces = [
+            p.get('network', {}).get('container_interface')
+            for p in self.provider_networks
+            if p.get('network', {}).get('container_interface')
+        ]
         is_management_set = any(p.get('network', {}).get('is_management_address') for p in self.provider_networks)
         new_net_info = await self.app.push_screen_wait(AddEditProviderNetworkScreen(
             cidr_options=cidr_options,
+            existing_interfaces=existing_interfaces,
             is_management_network_set=is_management_set
         ))
 
@@ -493,14 +667,20 @@ class NetworkScreen(WizardConfigScreen):
         index = int(self.selected_pn_key)
         network_to_edit = self.provider_networks[index]
         cidr_options = list(self.cidr_networks.keys())
+        existing_interfaces = [
+            p.get('network', {}).get('container_interface')
+            for i, p in enumerate(self.provider_networks)
+            if i != index and p.get('network', {}).get('container_interface')
+        ]
         is_management_set_elsewhere = any(
             p.get('network', {}).get('is_management_address')
             for i, p in enumerate(self.provider_networks) if i != index
         )
 
         updated_net_info = await self.app.push_screen_wait(
-            AddEditProviderNetworkScreen(cidr_options=cidr_options, network_data=network_to_edit,
-                                         is_management_network_set=is_management_set_elsewhere)
+            AddEditProviderNetworkScreen(cidr_options=cidr_options, existing_interfaces=existing_interfaces,
+                                         network_data=network_to_edit,
+                                         is_management_network_set=is_management_set_elsewhere,)
         )
         if updated_net_info:
             current_nets = self.provider_networks.copy()
@@ -591,6 +771,99 @@ class NetworkScreen(WizardConfigScreen):
                 delete_cidr_button.display = False
                 self.selected_cidr_key = None
 
+    @on(Button.Pressed, "#add_static_route_button")
+    @work
+    async def action_add_static_route(self) -> None:
+        """Show the modal for adding a new static route."""
+        provider_net_options = [
+            p.get("network", {}).get("container_bridge")
+            for p in self.provider_networks
+            if p.get("network", {}).get("container_bridge")
+        ]
+        if not provider_net_options:
+            self.query_one("#status_message").update(
+                "[yellow]Cannot add a static route without a provider network.[/yellow]")
+            self.app.bell()
+            return
+
+        new_route_info = await self.app.push_screen_wait(AddEditStaticRouteScreen(
+            provider_network_options=provider_net_options
+        ))
+
+        if new_route_info:
+            # Find the provider network to add this route to
+            current_nets = copy.deepcopy(self.provider_networks)
+            for p_net in current_nets:
+                if p_net.get("network", {}).get("container_bridge") == new_route_info["network_bridge"]:
+                    p_net.setdefault("network", {}).setdefault("static_routes", []).append({
+                        "cidr": new_route_info["cidr"],
+                        "gateway": new_route_info["gateway"],
+                    })
+                    # Re-assign to trigger the watcher
+                    self.provider_networks = current_nets
+                    break
+
+    @on(Button.Pressed, "#edit_static_route_button")
+    @work
+    async def action_edit_static_route(self) -> None:
+        """Show the modal for editing an existing static route."""
+        if self.selected_sr_key is None:
+            return
+
+        index = int(self.selected_sr_key)
+        route_to_edit = self.static_routes[index]
+
+        provider_net_options = [
+            p.get("network", {}).get("container_bridge") for p in self.provider_networks
+            if p.get("network", {}).get("container_bridge")
+        ]
+
+        updated_route_info = await self.app.push_screen_wait(
+            AddEditStaticRouteScreen(provider_network_options=provider_net_options, route_data=route_to_edit)
+        )
+
+        if updated_route_info:
+            # Find the original route in the provider_networks structure and update it
+            # The bridge name is constant, so we use it to find the parent network.
+            current_nets = copy.deepcopy(self.provider_networks)
+            for p_net in current_nets:
+                if p_net.get("network", {}).get("container_bridge") == route_to_edit["network_bridge"]:
+                    routes = p_net.get("network", {}).get("static_routes", [])
+                    routes.remove({"cidr": route_to_edit["cidr"], "gateway": route_to_edit["gateway"]})
+                    routes.append({"cidr": updated_route_info["cidr"], "gateway": updated_route_info["gateway"]})
+                    self.provider_networks = current_nets
+                    return
+
+    @on(Button.Pressed, "#delete_static_route_button")
+    @work
+    async def on_delete_static_route_button_pressed(self) -> None:
+        """Delete the selected static route after confirmation."""
+        if self.selected_sr_key is None:
+            return
+
+        index = int(self.selected_sr_key)
+        route_to_delete = self.static_routes[index]
+        message = f"Delete route '{route_to_delete['cidr']}' via '{route_to_delete['gateway']}'?"
+        confirmed = await self.app.push_screen_wait(ConfirmExitScreen(message=message))
+
+        if confirmed:
+            current_nets = copy.deepcopy(self.provider_networks)
+            for p_net in current_nets:
+                if p_net.get("network", {}).get("container_bridge") == route_to_delete["network_bridge"]:
+                    routes_list = p_net.get("network", {}).get("static_routes", [])
+                    routes_list.remove({"cidr": route_to_delete["cidr"], "gateway": route_to_delete["gateway"]})
+                    break
+
+            # After deletion, clear the selection state to prevent errors
+            edit_button = self.query_one("#edit_static_route_button", Button)
+            edit_button.disabled = True
+            edit_button.display = False
+            delete_button = self.query_one("#delete_static_route_button", Button)
+            delete_button.disabled = True
+            delete_button.display = False
+            self.selected_sr_key = None
+            self.provider_networks = current_nets
+
     @on(Button.Pressed, "#save_button")
     def on_save_button_pressed(self) -> None:
         """Handle save button press by calling the action worker."""
@@ -651,7 +924,6 @@ class NetworkScreen(WizardConfigScreen):
 
             with self.user_config_file.open('w') as f:
                 yaml_parser.dump(config_data, f)
-                f.write('\n')
         except YAMLError as e:
             error_message = str(type(e))
             if "Duplicate merge keys" in str(e) or "DuplicateKeyError" in str(type(e)):

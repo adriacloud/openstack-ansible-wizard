@@ -76,9 +76,11 @@ class AddEditBindingScreen(ModalScreen):
                 id="binding_type",
             )
             yield Label("Address:")
-            yield Input(value=self.binding_data.get("address", ""), id="binding_address")
+            yield Input(
+                value=self.binding_data.get("address", ""), placeholder="e.g. 172.29.236.101", id="binding_address")
             yield Label("Interface:")
-            yield Input(value=self.binding_data.get("interface", ""), id="binding_interface")
+            yield Input(
+                value=self.binding_data.get("interface", ""), placeholder="e.g. br-mgmt", id="binding_interface")
             with Grid(classes="modal-button-row"):
                 yield Button(button_label, variant="primary", id="save_binding")
                 yield Button("Cancel", id="cancel_binding")
@@ -167,7 +169,8 @@ class HAProxyConfigScreen(WizardConfigScreen):
                             Checkbox("Run in LXC container", id="haproxy_in_lxc",
                                      tooltip="Ensure you have configured corresponding Provider Network "
                                              "bridge/interface and that it is assigned to the `haproxy` "
-                                             "group"),
+                                             "group.\n"
+                                             "This interface also needs to have a default route defined."),
                             Checkbox("Enable SSL for all VIPs", id="haproxy_ssl_all_vips"),
                             classes="service-row",
                         )

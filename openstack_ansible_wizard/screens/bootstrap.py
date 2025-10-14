@@ -138,7 +138,8 @@ class CloneOSAScreen(Screen):
             osa_versions_widget.disabled = False
             self.repository_check_text = ""
         else:
-            self.repository_check_text = "[red]Unable to fetch OpenStack-Ansible versions for the release[/red]"
+            self.repository_check_text = "[red]Unable to fetch OpenStack-Ansible versions " \
+                                         "for the {event.value} release[/red]"
 
     @on(Select.Changed, '#openstack-ansible-version')
     def enable_clone_button(self, event: Select.Changed) -> None:
