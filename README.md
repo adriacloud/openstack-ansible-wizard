@@ -1,6 +1,6 @@
 # OpenStack-Ansible Wizard TUI
 
-<img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/logo.png" alt="drawing" width="350"/><br>
+<img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/main/img/logo.png" alt="drawing" width="350"/><br>
 
 A user-friendly Textual-based configuration manager for OpenStack-Ansible.
 
@@ -12,27 +12,27 @@ A user-friendly Textual-based configuration manager for OpenStack-Ansible.
 -   **Guided Setup**: Automatically checks for your OpenStack-Ansible repository and configuration directories, guiding you through the first steps.
 -   **Guided Bootstrapping**:
 
-    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-bootstrap.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/main/img/osa-wizard-bootstrap.gif" alt="drawing" width="500"/><br>
 
     -   Fetches available OpenStack releases and corresponding OpenStack-Ansible versions directly from OpenDev.
     -   Clones the exact version of the OpenStack-Ansible repository you need.
     -   Runs the `bootstrap-ansible.sh` script and displays live log output.
 -   **Inventory Management**:
 
-    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-inventory.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/main/img/osa-wizard-inventory.gif" alt="drawing" width="500"/><br>
 
     -   Visually manage your inventory hosts and groups in an interactive table.
     -   Easily add, edit, and assign hosts to groups through intuitive forms.
     -   Saves changes back to your configuration files, automatically organizing groups into standardized files under `conf.d/`.
 -   **Network Configuration**:
 
-    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-network.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/main/img/osa-wizard-network.gif" alt="drawing" width="500"/><br>
 
     -   Create, edit and delete CIDR definitions together with used subnets
     -   Manage provider networks definitions
 -   **Services Configuration**: Manage most common settings and scenarios in (almost) intuitive way
 
-    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-config.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/main/img/osa-wizard-config.gif" alt="drawing" width="500"/><br>
 
     -   Configure Public/Private endpoint names
     -   Define details for issued self-signed Certificate Authority
@@ -40,31 +40,19 @@ A user-friendly Textual-based configuration manager for OpenStack-Ansible.
     -   More to come soon!
 -   **Built-in Configuration Editor**:
 
-    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-editor.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/main/img/osa-wizard-editor.gif" alt="drawing" width="500"/><br>
 
     -   A powerful side-by-side file browser and YAML editor for direct manipulation of all configuration files.
     -   Supports creating, deleting, and editing files and directories within your configuration path.
 -   **Web TUI Mode**: Serve the entire application as a web-based TUI, accessible from any modern browser.
 
-    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/devel/img/osa-wizard-web-serve.gif" alt="drawing" width="500"/><br>
+    <img src="https://raw.githubusercontent.com/adriacloud/openstack-ansible-wizard/main/img/osa-wizard-web-serve.gif" alt="drawing" width="500"/><br>
 
 -   **Can be used with existing deployments**: At your own risk, of course! We are trying our best to have compatibility and do not break existing environments, but this is not always guaranteed.
 ## Installation
 
-The application is designed to be run from a cloned repository.
 
-1.  **Prerequisites**
-
-    Ensure you have `git` and Python 3.10+ installed.
-
-2.  **Clone the Repository**
-
-    ```bash
-    git clone https://github.com/adriacloud/openstack-ansible-wizard.git
-    cd openstack-ansible-wizard
-    ```
-
-3.  **Create a Virtual Environment** (Recommended)
+1.  **Create a Python Virtual Environment** (Recommended)
 
     ```bash
     python3 -m venv .venv
@@ -77,10 +65,10 @@ The application is designed to be run from a cloned repository.
 
     ```bash
     # For standard TUI usage
-    pip install -i https://test.pypi.org/simple/ openstack-ansible-wizard
+    pip install openstack-ansible-wizard
 
     # To include web server capabilities
-    pip install -i https://test.pypi.org/simple/ openstack-ansible-wizard[serve]
+    pip install openstack-ansible-wizard[serve]
     ```
 
     You can also run the application without installation, which might be
