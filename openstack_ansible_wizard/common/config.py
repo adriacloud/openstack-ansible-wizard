@@ -30,6 +30,23 @@ def _get_managed_keys_for_service(service_name: str) -> set[str]:
     return set()
 
 
+def _get_legacy_files_for_service(config_path: str, service_name: str) -> list[Path]:
+    """Returns a list of legacy configuration files for a given service."""
+    group_vars_path = Path(config_path) / "group_vars"
+    if service_name == "all":
+        service_dir_path = group_vars_path / "all"
+        service_dir_path.mkdir(exist_ok=True)  # Ensure it exists for glob
+        return [f for f in service_dir_path.glob("*.y*ml") if f.name not in ("wizard.yml", "wizard.yaml")]
+    else:
+        # For other services, legacy files are in the parent group_vars directory
+        return [
+            group_vars_path / f"{service_name}.yml",
+            group_vars_path / f"{service_name}.yaml",
+            group_vars_path / f"{service_name}_all.yml",
+            group_vars_path / f"{service_name}_all.yaml",
+        ]
+
+
 def load_service_config(config_path: str, service_name: str) -> tuple[dict, str | None]:
     """Loads and merges configuration for a specific service from multiple YAML files.
 
@@ -44,53 +61,24 @@ def load_service_config(config_path: str, service_name: str) -> tuple[dict, str 
     service_dir_path = group_vars_path / service_name
     service_dir_path.mkdir(exist_ok=True)
 
-    if service_name == "all":
-        # For 'all', we treat all non-wizard YAML files in the directory as potential legacy sources.
-        legacy_files = [f for f in service_dir_path.glob("*.y*ml") if f.name not in ("wizard.yml", "wizard.yaml")]
-    else:
-        # Migrate legacy customer config files if they exist
-        legacy_files = [
-            group_vars_path / f"{service_name}.yml",
-            group_vars_path / f"{service_name}.yaml",
-            group_vars_path / f"{service_name}_all.yml",
-            group_vars_path / f"{service_name}_all.yaml",
-        ]
-
     yaml_loader = YAML()
-    yaml_writer = YAML()
-    yaml_writer.indent(mapping=2, sequence=4, offset=2)
-    yaml_writer.explicit_start = True
     managed_keys = _get_managed_keys_for_service(service_name)
     final_legacy_managed_config = {}
 
+    legacy_files = _get_legacy_files_for_service(config_path, service_name)
     for legacy_file in legacy_files:
         if legacy_file.exists():
             try:
                 with legacy_file.open('r') as f:
                     data = yaml_loader.load(f) or {}
 
-                unmanaged_data = {}
-                file_managed_config = {}
                 for key, value in data.items():
                     if key in managed_keys:
-                        file_managed_config[key] = value
-                    else:
-                        unmanaged_data[key] = value
+                        # We only care about managed keys from legacy files.
+                        # Unmanaged keys will be ignored and left in their original files.
+                        final_legacy_managed_config[key] = value
 
-                # If there are no managed keys in the file, there's nothing to migrate.
-                if not file_managed_config:
-                    continue
-
-                if unmanaged_data:
-                    # Rewrite the file with only the unmanaged data.
-                    with legacy_file.open('w') as f:
-                        yaml_writer.dump(unmanaged_data, f)
-                else:
-                    # If the file only contained managed keys, it's now empty and can be removed.
-                    legacy_file.unlink()
-                # Add the managed keys from this file to the final collection
-                final_legacy_managed_config.update(file_managed_config)
-            except (IOError, OSError) as e:
+            except (YAMLError, IOError, OSError) as e:
                 return {}, f"Error migrating legacy file {legacy_file.name}: {e}"
 
     # Load all YAML files from the service-specific directory.
@@ -119,10 +107,48 @@ def load_service_config(config_path: str, service_name: str) -> tuple[dict, str 
 
 def save_service_config(config_path: str, service_name: str, data: dict) -> None:
     """Saves configuration data to the wizard-specific YAML file."""
+    # First, handle the migration of any legacy files.
+    # This ensures that when we save the new wizard.yml, we also clean up
+    # the old files to prevent settings from being defined in two places.
+    yaml_loader = YAML()
+    yaml_writer = YAML()
+    yaml_writer.indent(mapping=2, sequence=4, offset=2)
+    yaml_writer.explicit_start = True
+    managed_keys = _get_managed_keys_for_service(service_name)
+
+    legacy_files = _get_legacy_files_for_service(config_path, service_name)
+    for legacy_file in legacy_files:
+        if legacy_file.exists():
+            try:
+                with legacy_file.open('r') as f:
+                    legacy_data = yaml_loader.load(f) or {}
+
+                unmanaged_data = {}
+                has_managed_keys = False
+                for key, value in legacy_data.items():
+                    if key in managed_keys:
+                        has_managed_keys = True
+                    else:
+                        unmanaged_data[key] = value
+
+                # Only modify the file if it contained keys that are now managed by the wizard.
+                if has_managed_keys:
+                    if unmanaged_data:
+                        # Rewrite the file with only the unmanaged data.
+                        with legacy_file.open('w') as f:
+                            yaml_writer.dump(unmanaged_data, f)
+                    else:
+                        # If the file only contained managed keys, it's now empty and can be removed.
+                        legacy_file.unlink()
+
+            except (IOError, OSError, YAMLError) as e:
+                # Re-raise as an exception that the calling screen can catch and display.
+                raise IOError(f"Error migrating legacy file {legacy_file.name}: {e}") from e
+
     save_path = Path(config_path) / "group_vars" / service_name / "wizard.yml"
     save_path.parent.mkdir(parents=True, exist_ok=True)
-    yaml = YAML()
-    yaml.indent(mapping=2, sequence=4, offset=2)
-    yaml.explicit_start = True
+
+    # Use the same writer instance to maintain formatting.
+    yaml_writer.explicit_start = True
     with save_path.open('w') as f:
-        yaml.dump(data, f)
+        yaml_writer.dump(data, f)
