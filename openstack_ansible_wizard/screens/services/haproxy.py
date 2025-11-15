@@ -15,7 +15,6 @@
 import copy
 import ipaddress
 from pathlib import Path
-from ruamel.yaml import YAMLError
 import time
 import yaml
 
@@ -403,11 +402,10 @@ class HAProxyConfigScreen(WizardConfigScreen):
                 del new_config["lxc_container_networks"]
 
         try:
-            # The new function handles directory creation and saving
             save_service_config(self.config_path, self.SERVICE_NAME, new_config)
             status_widget.update("[green]Changes saved successfully.[/green]")
             self.load_configs()
-        except (YAMLError, IOError) as e:
+        except Exception as e:
             status_widget.update(f"[red]Error saving file: {e}[/red]")
 
     def _get_haproxy_lxc_config(self, is_in_lxc: bool) -> tuple[dict, str | None]:
