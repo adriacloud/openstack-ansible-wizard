@@ -178,6 +178,17 @@ class GenericConfigScreen(WizardConfigScreen):
         self.query_one("#internal_lb_vip_address", Input).value = self.config_data.get("internal_lb_vip_address", "")
         self.query_one("#external_lb_vip_address", Input).value = self.config_data.get("external_lb_vip_address", "")
 
+    @work(thread=True)
+    def _reload_and_resync_state(self) -> None:
+        """Silently reloads config data and resets the initial state after a save."""
+        data, error = load_service_config(self.config_path, self.SERVICE_NAME)
+        if error:
+            self.query_one("#generic_status_message").update(f"[red]Error reloading state: {error}[/red]")
+            return
+
+        self.config_data = data
+        self.initial_data = self._get_current_config()
+
     def _populate_pki_data_from_config(self) -> None:
         """Extracts PKI data from loaded config to populate the modal."""
         authorities = self.config_data.get("openstack_pki_authorities", [])
@@ -267,8 +278,8 @@ class GenericConfigScreen(WizardConfigScreen):
         try:
             save_service_config(self.config_path, self.SERVICE_NAME, new_config)
             status_widget.update("[green]Changes saved successfully.[/green]")
-            # Update initial_data to reflect the new saved state
-            self.initial_data = self._get_current_config()
+            # Silently reload and resync state after save to correctly handle has_unsaved_changes
+            self._reload_and_resync_state()
         except Exception as e:
             status_widget.update(f"[red]Error saving file: {e}[/red]")
 

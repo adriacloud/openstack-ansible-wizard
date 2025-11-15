@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openstack-ansible-wizard"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
-  { name="Adria Cloud Services", email="contact@adriacloud.services" },
+  { name="Adria Cloud Services", email="contact@adria-cloud.com" },
 ]
 description = "A Textual-based Wizard for OpenStack-Ansible."
 readme = "README.md"
