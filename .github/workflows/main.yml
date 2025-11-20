@@ -16,19 +16,41 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-            os:
-              - ubuntu-latest
-            python:
-              - 3.12
-              - 3.13
+        os:
+          - ubuntu-latest
+        python:
+          - 3.12
+          - 3.13
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-          cache: 'pip'
+          cache: "pip"
           cache-dependency-path: test-requirements.txt
       - name: Install tox
         run: pip install tox
       - name: Run linters check
         run: tox -e linters
+
+  unit-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+        python:
+          - 3.12
+          - 3.13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: "pip"
+          cache-dependency-path: test-requirements.txt
+      - name: Install tox
+        run: pip install tox
+      - name: Run unit tests
+        run: tox -e py3
